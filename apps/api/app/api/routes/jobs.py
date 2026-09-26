@@ -12,6 +12,7 @@ from app.errors import AppError, ErrorCode
 from app.schemas.job import JobCreated, JobState, utcnow
 from app.schemas.options import AnalysisOptions
 from app.schemas.profile import DatasetProfile
+from app.services.analysis.roles import resolve_column
 from app.services.container import Services, get_services
 from app.services.ingestion.loader import load_dataset
 
@@ -36,12 +37,21 @@ async def create_job(
     data = await file.read(settings.max_upload_bytes + 1)
     df = await run_in_threadpool(load_dataset, data, filename, settings.max_upload_bytes)
     del data
+    if opts.target_column:
+        resolved = resolve_column(df, opts.target_column)
+        if resolved is None:
+            raise AppError(
+                ErrorCode.INVALID_OPTIONS,
+                f"target_column {opts.target_column!r} is not a column in this file.",
+            )
+        opts.target_column = resolved
 
     job = JobState(job_id=uuid4().hex, filename=filename, options=opts)
     ingest = job.stage("ingest")
     ingest.status, ingest.started_at, ingest.finished_at = "done", utcnow(), utcnow()
     services.store.create(job)
-    background.add_task(services.pipeline.run, job.job_id, df)
+    services.datasets.put(job.job_id, df)
+    background.add_task(services.pipeline.run, job.job_id)
     return JobCreated(job_id=job.job_id, status=job.status)
 
 
@@ -85,7 +95,7 @@ def retry_job(job_id: str, background: BackgroundTasks, services: ServicesDep) -
         raise AppError(
             ErrorCode.JOB_NOT_RETRYABLE, f"Only failed jobs can be retried (job is {job.status})."
         )
-    if job.profile is None:
+    if job.insights is None and services.datasets.get(job_id) is None:
         raise AppError(
             ErrorCode.JOB_NOT_RETRYABLE,
             "The dataset is no longer available for this job. Upload it again.",

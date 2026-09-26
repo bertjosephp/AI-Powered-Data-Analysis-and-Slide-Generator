@@ -4,19 +4,21 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.schemas.deck import ResolvedSlide
+from app.schemas.findings import ColumnRoles, Finding
 from app.schemas.insights import Insights
 from app.schemas.options import AnalysisOptions
 from app.schemas.presentation import Presentation
 from app.schemas.profile import DatasetProfile
 
 JobStatus = Literal["queued", "running", "completed", "failed"]
-StageKey = Literal["ingest", "profile", "analyze", "generate_deck"]
+StageKey = Literal["ingest", "profile", "explore", "analyze", "generate_deck"]
 StageStatus = Literal["pending", "running", "done", "failed"]
 
 STAGE_LABELS: dict[StageKey, str] = {
     "ingest": "Reading file",
     "profile": "Profiling data",
-    "analyze": "Generating insights",
+    "explore": "Finding patterns",
+    "analyze": "Writing the story",
     "generate_deck": "Building slide deck",
 }
 
@@ -51,6 +53,8 @@ class JobState(BaseModel):
         default_factory=lambda: [Stage(key=k, label=v) for k, v in STAGE_LABELS.items()]
     )
     profile: DatasetProfile | None = None
+    roles: ColumnRoles | None = None
+    findings: list[Finding] | None = None
     insights: Insights | None = None
     deck: list[ResolvedSlide] | None = None  # the slides as rendered, for the web preview
     presentation: Presentation | None = None

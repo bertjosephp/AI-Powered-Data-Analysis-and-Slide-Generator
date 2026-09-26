@@ -1,10 +1,9 @@
-"""Runs a job through profile -> analyze -> generate_deck, recording progress.
+"""Runs a job through profile -> explore -> analyze -> generate_deck, recording progress.
 
 Ingest happens in the upload request so bad files fail fast with a 400; the
-parsed DataFrame is handed to `run` and dropped once the profile exists. Each
-stage's output is saved on the job, so `run` on a failed job resumes from the
-first stage without output. The deck stage is local and deterministic, so a
-retry simply renders again.
+parsed DataFrame is kept in the DatasetStore for the job's lifetime, so the
+analysis stages (and retries of them) can use it. Each stage's output is saved
+on the job, so `run` on a failed job resumes from the first stage without output.
 """
 
 import logging
@@ -19,12 +18,15 @@ from app.errors import AppError, ErrorCode
 from app.schemas.deck import ResolvedSlide
 from app.schemas.job import JobError, JobState, StageKey, utcnow
 from app.schemas.presentation import Presentation
+from app.services.analysis.battery import BatteryResult, run_battery
+from app.services.analysis.roles import resolve_column
 from app.services.deck.fit import fit_slides
 from app.services.deck.pptx_renderer import DeckRenderer
 from app.services.deck.resolve import resolve_slides
-from app.services.eda.profiler import build_profile
+from app.services.eda.profiler import build_profile, sample_frame
 from app.services.llm.analyst import InsightsGenerator
 from app.store.artifact_store import ArtifactStore
+from app.store.dataset_store import DatasetStore
 from app.store.job_store import JobStore
 
 log = logging.getLogger(__name__)
@@ -41,15 +43,17 @@ class Pipeline:
         analyst: InsightsGenerator,
         renderer: DeckRenderer,
         artifacts: ArtifactStore,
+        datasets: DatasetStore,
         settings: Settings,
     ) -> None:
         self._store = store
+        self._datasets = datasets
         self._analyst = analyst
         self._renderer = renderer
         self._artifacts = artifacts
         self._settings = settings
 
-    async def run(self, job_id: str, df: pd.DataFrame | None = None) -> None:
+    async def run(self, job_id: str) -> None:
         job = self._store.get(job_id)
         if job is None:
             log.warning("Job %s vanished before it ran", job_id)
@@ -60,15 +64,14 @@ class Pipeline:
         try:
             if job.profile is None:
                 async with self._stage(job, "profile"):
-                    if df is None:
-                        raise AppError(
-                            ErrorCode.INTERNAL_ERROR,
-                            "The dataset is no longer in memory. Upload it again.",
-                        )
                     job.profile = await run_in_threadpool(
-                        build_profile, df, self._settings.profile_sample_rows
+                        build_profile, self._dataset(job), self._settings.profile_sample_rows
                     )
-                df = None
+
+            if job.findings is None:
+                async with self._stage(job, "explore"):
+                    result = await run_in_threadpool(self._explore, self._dataset(job), job)
+                    job.roles, job.findings = result.roles, result.findings
 
             if job.insights is None:
                 async with self._stage(job, "analyze"):
@@ -90,6 +93,25 @@ class Pipeline:
 
         job.status = "completed"
         self._store.save(job)
+
+    def _dataset(self, job: JobState) -> pd.DataFrame:
+        df = self._datasets.get(job.job_id)
+        if df is None:
+            raise AppError(
+                ErrorCode.DATASET_EXPIRED, "The dataset is no longer in memory. Upload it again."
+            )
+        return df
+
+    def _explore(self, df: pd.DataFrame, job: JobState) -> BatteryResult:
+        assert job.profile is not None
+        sample = sample_frame(df, self._settings.profile_sample_rows)
+        target = resolve_column(sample, job.options.target_column)
+        return run_battery(
+            sample,
+            job.profile,
+            target=target,
+            sampled_from=len(df) if len(sample) < len(df) else None,
+        )
 
     def _build_deck(self, job: JobState) -> tuple[list[ResolvedSlide], bytes]:
         """Resolve references against the profile, enforce text budgets, render."""

@@ -77,9 +77,12 @@ def test_full_pipeline_completes(client: TestClient) -> None:
     assert _stage_statuses(job) == {
         "ingest": "done",
         "profile": "done",
+        "explore": "done",
         "analyze": "done",
         "generate_deck": "done",
     }
+    assert job["roles"]["targets"]  # explore ran and inferred at least one outcome
+    assert isinstance(job["findings"], list)
     assert job["filename"] == "sample.csv"
     assert job["options"]["audience"] == "the board"
     assert job["profile"]["n_rows"] == 40
@@ -215,3 +218,50 @@ def test_retry_of_completed_job_is_rejected(client: TestClient) -> None:
     job_id = _upload(client).json()["job_id"]
     res = client.post(f"{JOBS}/{job_id}/retry")
     assert res.status_code == 409 and res.json()["error"]["code"] == "JOB_NOT_RETRYABLE"
+
+
+# ---------- findings, steering and dataset retention ----------
+
+SAMPLES = Path(__file__).parents[2] / "app" / "sample_data"
+
+
+def _upload_sample(client: TestClient, name: str, options: dict[str, Any]) -> Any:
+    files = {"file": (f"{name}.csv", (SAMPLES / f"{name}.csv").read_bytes())}
+    return client.post(JOBS, files=files, data={"options": json.dumps(options)})
+
+
+def test_explore_produces_ranked_findings_for_the_chosen_target(client: TestClient) -> None:
+    res = _upload_sample(
+        client,
+        "saas_churn",
+        {"target_column": "CHURNED", "question": "Why do customers churn?"},
+    )
+    assert res.status_code == 202
+    job = client.get(f"{JOBS}/{res.json()['job_id']}").json()
+
+    assert job["status"] == "completed"
+    assert job["options"]["target_column"] == "churned"  # resolved to the real column name
+    assert job["options"]["question"] == "Why do customers churn?"
+    assert job["roles"]["targets"][0] == "churned"
+    findings = job["findings"]
+    assert findings and findings[0]["id"] == "F1"
+    assert any(f["target"] == "churned" and f["dimension"] == "billing_cycle" for f in findings)
+    assert all(f["significant"] for f in findings)
+
+
+def test_unknown_target_column_is_rejected(client: TestClient) -> None:
+    res = _upload(client, data={"options": json.dumps({"target_column": "nope"})})
+    assert res.status_code == 400
+    assert res.json()["error"]["code"] == "INVALID_OPTIONS"
+    assert "nope" in res.json()["error"]["message"]
+
+
+def test_retry_needs_the_dataset_until_insights_exist(settings: Settings) -> None:
+    analyst = CountingAnalyst(failures=1)
+    with make_client(settings, analyst=analyst) as client:
+        job_id = _upload(client).json()["job_id"]
+        services = client.app.state.services  # type: ignore[attr-defined]
+        services.datasets._items.clear()  # simulate the dataset expiring
+        res = client.post(f"{JOBS}/{job_id}/retry")
+    assert res.status_code == 409
+    assert res.json()["error"]["code"] == "JOB_NOT_RETRYABLE"

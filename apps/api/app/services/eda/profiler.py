@@ -35,6 +35,13 @@ _BOOL_STRINGS = frozenset({"true", "false", "yes", "no", "y", "n", "t", "f"})
 _ID_NAME = re.compile(r"(^|[_\s-])id$|^id[_\s-]|_key$", re.IGNORECASE)
 
 
+def sample_frame(df: pd.DataFrame, sample_rows: int) -> pd.DataFrame:
+    """The deterministic sample used for statistics (profile and analyses alike)."""
+    if len(df) <= sample_rows:
+        return df
+    return df.sample(n=sample_rows, random_state=0).sort_index()
+
+
 def build_profile(df: pd.DataFrame, sample_rows: int) -> DatasetProfile:
     warnings_out: list[str] = []
     n_rows_total = len(df)
@@ -42,7 +49,7 @@ def build_profile(df: pd.DataFrame, sample_rows: int) -> DatasetProfile:
 
     sampled = n_rows_total > sample_rows
     if sampled:
-        df = df.sample(n=sample_rows, random_state=0).sort_index()
+        df = sample_frame(df, sample_rows)
         warnings_out.append(
             f"Statistics were computed on a random sample of {sample_rows:,} "
             f"of {n_rows_total:,} rows."
