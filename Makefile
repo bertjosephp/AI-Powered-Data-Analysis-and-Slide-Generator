@@ -8,7 +8,7 @@ VBIN := $(VENV)/bin
 .PHONY: help install install-api install-web dev dev-api dev-web test test-api test-web e2e lint lint-api lint-web fmt
 
 help: ## Show available targets
-	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
 install: install-api install-web ## Install all dependencies
 
