@@ -1,0 +1,77 @@
+{
+  "executive_summary": "Across 40 orders from January to October 2025, revenue is driven far more by which product is sold than by volume: unit price correlates with revenue at r = 0.78, versus r = 0.59 for units. Gizmo is the most-ordered product and the South the most active region. Discounts average 14.5% and about 22% of orders are returned, both worth investigating before scaling promotions.",
+  "key_findings": [
+    {
+      "title": "Price mix drives revenue more than volume",
+      "detail": "Revenue tracks unit price more closely than units sold, so shifting mix toward higher-priced products likely moves revenue more than pushing volume.",
+      "supporting_stats": ["revenue vs unit_price: r = 0.7825", "revenue vs units: r = 0.594"]
+    },
+    {
+      "title": "Revenue per order is right-skewed",
+      "detail": "Mean revenue per order (685.06) sits well above the median (463.25), so a few large orders carry a disproportionate share.",
+      "supporting_stats": ["revenue mean: 685.06", "revenue median: 463.25"]
+    },
+    {
+      "title": "South leads order count",
+      "detail": "South accounts for the most orders among the four regions, followed by North.",
+      "supporting_stats": ["South: 13 orders", "North: 10 orders"]
+    },
+    {
+      "title": "Returns are material",
+      "detail": "Roughly one in five orders is returned, a meaningful drag on realized revenue.",
+      "supporting_stats": ["returned = True: 9 of 40 orders (22.5%)"]
+    }
+  ],
+  "hypotheses": [
+    {
+      "statement": "Shifting product mix toward Gizmo increases revenue per order.",
+      "rationale": "Unit price has the strongest correlation with revenue in the profile.",
+      "suggested_test": "A/B test merchandising that features Gizmo and compare revenue per order.",
+      "confidence": "medium"
+    },
+    {
+      "statement": "Higher discounts do not increase units per order.",
+      "rationale": "Discount shows no strong correlation with units (|r| < 0.5).",
+      "suggested_test": "Regress units on discount, controlling for product and region.",
+      "confidence": "low"
+    },
+    {
+      "statement": "Return rates differ by product.",
+      "rationale": "The overall 22.5% return rate is high enough that it probably varies across segments.",
+      "suggested_test": "Chi-square test of returned vs product.",
+      "confidence": "low"
+    }
+  ],
+  "analytical_questions": [
+    {
+      "question": "What margin does each product carry after discounts and returns?",
+      "why_it_matters": "Revenue alone may favor products that are less profitable."
+    },
+    {
+      "question": "Why are two orders missing a region?",
+      "why_it_matters": "Gaps in regional attribution distort territory performance."
+    },
+    {
+      "question": "Is there seasonality in weekly order value?",
+      "why_it_matters": "The data spans nine months, enough to check for early seasonal patterns."
+    }
+  ],
+  "data_quality_notes": [
+    "discount is missing for 3 of 40 orders (7.5%).",
+    "region is missing for 2 of 40 orders (5%).",
+    "With only 40 orders, correlations are directional, not conclusive."
+  ],
+  "recommended_next_steps": [
+    "Join cost data to compute margin per product.",
+    "Break returns down by product and region.",
+    "Collect at least two more quarters of orders before setting pricing strategy."
+  ],
+  "slide_outline": [
+    {"title": "Sales Performance Review: Jan–Oct 2025", "bullets": ["40 orders analyzed", "Prepared for business stakeholders"]},
+    {"title": "Executive Summary", "bullets": ["Price mix drives revenue (r = 0.78)", "South leads order volume", "22.5% of orders returned"]},
+    {"title": "What Drives Revenue", "bullets": ["unit_price vs revenue: r = 0.78", "units vs revenue: r = 0.59", "Mean order 685 vs median 463"]},
+    {"title": "Regional and Product Mix", "bullets": ["South: 13 orders, North: 10", "Gizmo is the most-ordered product"]},
+    {"title": "Hypotheses to Test", "bullets": ["Gizmo-led mix raises order value", "Discounts don't lift volume", "Returns vary by product"]},
+    {"title": "Next Steps", "bullets": ["Add cost data for margin", "Break down returns", "Extend the time window"]}
+  ]
+}
