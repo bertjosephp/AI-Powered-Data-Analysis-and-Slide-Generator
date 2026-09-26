@@ -3,6 +3,14 @@
 import { AlertCircle, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
 
+import { ColumnTable } from "@/components/dataset/ColumnTable";
+import { CorrelationHeatmap } from "@/components/dataset/CorrelationHeatmap";
+import { MissingValues } from "@/components/dataset/MissingValues";
+import { SummaryCards } from "@/components/dataset/SummaryCards";
+import { ExecutiveSummary } from "@/components/insights/ExecutiveSummary";
+import { HypothesesList } from "@/components/insights/HypothesesList";
+import { NotesList, QuestionsList } from "@/components/insights/QuestionsList";
+import { DeckCard } from "@/components/presentation/DeckCard";
 import { PipelineTracker } from "@/components/progress/PipelineTracker";
 import { ApiError } from "@/lib/api/client";
 import type { JobState } from "@/lib/api/types";
@@ -40,13 +48,63 @@ export function JobView({ jobId, pollIntervalMs }: Props) {
     );
   }
 
+  const analyzing = job.stages.some((s) => s.key === "analyze" && s.status === "running");
+
   return (
-    <div className="space-y-6">
-      <JobHeader job={job} />
-      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
-        <PipelineTracker stages={job.stages} />
-      </section>
+    <div className="space-y-8">
+      <div className="space-y-6">
+        <JobHeader job={job} />
+        <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+          <PipelineTracker stages={job.stages} />
+        </section>
+        <DeckCard job={job} />
+      </div>
+
+      {job.insights ? (
+        <section className="space-y-4" aria-labelledby="insights-heading">
+          <h2 id="insights-heading" className="text-lg font-semibold tracking-tight">
+            Insights
+          </h2>
+          <ExecutiveSummary insights={job.insights} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <HypothesesList hypotheses={job.insights.hypotheses} />
+            <QuestionsList questions={job.insights.analytical_questions} />
+            <NotesList title="Recommended next steps" items={job.insights.recommended_next_steps} />
+            <NotesList title="Data quality notes" items={job.insights.data_quality_notes} />
+          </div>
+        </section>
+      ) : (
+        analyzing && <InsightsSkeleton />
+      )}
+
+      {job.profile && (
+        <section className="space-y-4" aria-labelledby="dataset-heading">
+          <h2 id="dataset-heading" className="text-lg font-semibold tracking-tight">
+            Dataset profile
+          </h2>
+          <SummaryCards profile={job.profile} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <MissingValues columns={job.profile.columns} />
+            <CorrelationHeatmap correlation={job.profile.correlation} />
+          </div>
+          <ColumnTable columns={job.profile.columns} />
+        </section>
+      )}
     </div>
+  );
+}
+
+function InsightsSkeleton() {
+  return (
+    <section aria-busy="true" aria-label="Generating insights" className="space-y-4">
+      <div className="h-6 w-28 animate-pulse rounded bg-surface-muted" />
+      <div className="h-28 animate-pulse rounded-2xl bg-surface-muted" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="h-24 animate-pulse rounded-xl bg-surface-muted" />
+        ))}
+      </div>
+    </section>
   );
 }
 

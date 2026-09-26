@@ -16,6 +16,13 @@
   --warning-soft: #fdf4e6;
   --danger: #c2261d;
   --danger-soft: #fdeceb;
+  /* Charts: diverging blue<->red with a gray midpoint; single-hue bars. Validated
+     with the dataviz palette validator against --surface in both modes. */
+  --viz-pos: #2a78d6;
+  --viz-neg: #e34948;
+  --viz-mid: #f0efec;
+  --viz-bar: #2a78d6;
+  --viz-track: #ececef;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -35,6 +42,11 @@
     --warning-soft: #2e2413;
     --danger: #f87171;
     --danger-soft: #331a1a;
+    --viz-pos: #3987e5;
+    --viz-neg: #e66767;
+    --viz-mid: #383835;
+    --viz-bar: #3987e5;
+    --viz-track: #26262f;
   }
 }
 
