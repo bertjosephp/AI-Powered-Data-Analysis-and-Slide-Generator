@@ -63,11 +63,14 @@ def _col(profile: DatasetProfile, name: str):  # type: ignore[no-untyped-def]
     ],
 )
 def test_metrics_resolve_from_the_profile(profile, metric, column, expected) -> None:  # type: ignore[no-untyped-def]
-    assert resolve_metric(MetricRef(metric=metric, column=column), profile) == expected
+    assert (
+        resolve_metric(MetricRef(metric=metric, column=column, finding_id=None), profile)
+        == expected
+    )
 
 
 def test_metric_values_match_profile_exactly(profile) -> None:  # type: ignore[no-untyped-def]
-    value, _ = resolve_metric(MetricRef(metric="max", column="revenue"), profile)  # type: ignore[misc]
+    value, _ = resolve_metric(MetricRef(metric="max", column="revenue", finding_id=None), profile)  # type: ignore[misc]
     assert value == format_number(_col(profile, "revenue").max)
 
 
@@ -81,14 +84,14 @@ def test_metric_values_match_profile_exactly(profile) -> None:  # type: ignore[n
     ],
 )
 def test_unresolvable_metrics_return_none(profile, metric, column) -> None:  # type: ignore[no-untyped-def]
-    assert resolve_metric(MetricRef(metric=metric, column=column), profile) is None
+    assert resolve_metric(MetricRef(metric=metric, column=column, finding_id=None), profile) is None
 
 
 # ---------- charts ----------
 
 
 def test_correlation_chart_uses_top_pairs(profile) -> None:  # type: ignore[no-untyped-def]
-    chart = resolve_chart(ChartRef(chart="correlations", column=None), profile)
+    chart = resolve_chart(ChartRef(chart="correlations", column=None, finding_id=None), profile)
     assert chart is not None
     assert chart.categories == [f"{p.a} × {p.b}" for p in profile.top_correlations]
     assert chart.values == [p.r for p in profile.top_correlations]
@@ -96,7 +99,7 @@ def test_correlation_chart_uses_top_pairs(profile) -> None:  # type: ignore[no-u
 
 
 def test_top_values_chart(profile) -> None:  # type: ignore[no-untyped-def]
-    chart = resolve_chart(ChartRef(chart="top_values", column="product"), profile)
+    chart = resolve_chart(ChartRef(chart="top_values", column="product", finding_id=None), profile)
     assert chart is not None
     assert list(zip(chart.categories, chart.values, strict=True)) == [
         ("Gizmo", 15.0),
@@ -106,14 +109,16 @@ def test_top_values_chart(profile) -> None:  # type: ignore[no-untyped-def]
 
 
 def test_missing_values_chart_sorted_desc(profile) -> None:  # type: ignore[no-untyped-def]
-    chart = resolve_chart(ChartRef(chart="missing_values", column=None), profile)
+    chart = resolve_chart(ChartRef(chart="missing_values", column=None, finding_id=None), profile)
     assert chart is not None
     assert chart.categories == ["discount", "region"] and chart.values == [7.5, 5.0]
 
 
 def test_numeric_summary_chart(profile) -> None:  # type: ignore[no-untyped-def]
     units = _col(profile, "units")
-    chart = resolve_chart(ChartRef(chart="numeric_summary", column="units"), profile)
+    chart = resolve_chart(
+        ChartRef(chart="numeric_summary", column="units", finding_id=None), profile
+    )
     assert chart is not None
     assert chart.categories == ["Min", "P25", "Median", "P75", "Max"]
     assert chart.values == [units.min, units.p25, units.median, units.p75, units.max]
@@ -129,12 +134,14 @@ def test_numeric_summary_chart(profile) -> None:  # type: ignore[no-untyped-def]
     ],
 )
 def test_unresolvable_charts_return_none(profile, chart, column) -> None:  # type: ignore[no-untyped-def]
-    assert resolve_chart(ChartRef(chart=chart, column=column), profile) is None
+    assert resolve_chart(ChartRef(chart=chart, column=column, finding_id=None), profile) is None
 
 
 def test_chart_degrades_when_dataset_has_no_signal(profile) -> None:  # type: ignore[no-untyped-def]
     empty = profile.model_copy(update={"top_correlations": []})
-    assert resolve_chart(ChartRef(chart="correlations", column=None), empty) is None
+    assert (
+        resolve_chart(ChartRef(chart="correlations", column=None, finding_id=None), empty) is None
+    )
 
 
 # ---------- whole deck ----------
@@ -147,15 +154,17 @@ def test_resolve_slides_replaces_every_reference(profile) -> None:  # type: igno
             layout="kpi_cards",
             title="At a glance",
             kpis=[
-                Kpi(label="Orders", metric=MetricRef(metric="rows", column=None)),
-                Kpi(label="Bogus", metric=MetricRef(metric="mean", column="ghost")),
+                Kpi(label="Orders", metric=MetricRef(metric="rows", column=None, finding_id=None)),
+                Kpi(
+                    label="Bogus", metric=MetricRef(metric="mean", column="ghost", finding_id=None)
+                ),
             ],
         ),
         ChartInsightSlide(
             layout="chart_insight",
             title="Price drives revenue",
             bullets=["r = 0.78"],
-            chart=ChartRef(chart="top_values", column="ghost"),
+            chart=ChartRef(chart="top_values", column="ghost", finding_id=None),
         ),
         NextStepsSlide(layout="next_steps", title="Next", steps=["Do it"]),
     ]

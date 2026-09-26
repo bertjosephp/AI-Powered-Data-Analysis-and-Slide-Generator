@@ -7,6 +7,7 @@ resolver, never from the model.
 """
 
 import io
+import math
 from collections.abc import Callable
 from typing import Protocol
 
@@ -15,6 +16,7 @@ from pptx.chart.data import CategoryChartData
 from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE, PP_ALIGN
+from pptx.oxml.ns import qn
 from pptx.slide import Slide
 from pptx.util import Emu, Inches, Pt
 
@@ -191,7 +193,7 @@ class PptxRenderer:
                 w - 2 * pad,
                 Inches(1.05),
                 kpi.value,
-                self._kpi_size(kpi.value, len(s.kpis)),
+                self._kpi_size(kpi.value, len(s.kpis), w - 2 * pad),
                 t.ink,
                 bold=True,
                 anchor=MSO_ANCHOR.MIDDLE,
@@ -220,17 +222,31 @@ class PptxRenderer:
         chart_w = Inches(7.55)
         self._card(slide, t.margin, top, chart_w, height)
         pad = Inches(0.3)
+        note_w = Inches(2.1) if s.chart.reference is not None else 0
         self._text(
             slide,
             t.margin + pad,
             top + Inches(0.22),
-            chart_w - 2 * pad,
+            chart_w - 2 * pad - note_w,
             Inches(0.4),
             s.chart.caption,
             13,
             t.muted,
             bold=True,
         )
+        if s.chart.reference is not None:
+            self._text(
+                slide,
+                t.margin + chart_w - pad - note_w,
+                top + Inches(0.22),
+                note_w,
+                Inches(0.4),
+                f"{(s.chart.reference_label or 'overall').capitalize()}: "
+                f"{self._format(s.chart.reference, s.chart.value_format)}",
+                12,
+                t.muted,
+                align=PP_ALIGN.RIGHT,
+            )
         self._chart(
             slide,
             s.chart,
@@ -434,8 +450,12 @@ class PptxRenderer:
         data = CategoryChartData()  # type: ignore[no-untyped-call]
         data.categories = chart.categories
         data.add_series(chart.caption, chart.values)  # type: ignore[no-untyped-call]
-        vertical = chart.kind == "numeric_summary"
-        kind = XL_CHART_TYPE.COLUMN_CLUSTERED if vertical else XL_CHART_TYPE.BAR_CLUSTERED
+        style = "columns" if chart.kind == "numeric_summary" else chart.style
+        kind = {
+            "line": XL_CHART_TYPE.LINE_MARKERS,
+            "columns": XL_CHART_TYPE.COLUMN_CLUSTERED,
+            "bars": XL_CHART_TYPE.BAR_CLUSTERED,
+        }[style]
         frame = slide.shapes.add_chart(kind, Emu(x), Emu(y), Emu(w), Emu(h), data)  # type: ignore[arg-type]
         c = frame.chart  # type: ignore[attr-defined]  # stubs say Chart; it returns a GraphicFrame
         c.has_legend = False
@@ -443,25 +463,31 @@ class PptxRenderer:
         c.font.name, c.font.size, c.font.color.rgb = t.font, Pt(12), rgb(t.muted)
 
         plot = c.plots[0]
-        plot.gap_width = 55
         value_axis, category_axis = c.value_axis, c.category_axis
-        value_axis.visible = False
-        value_axis.has_major_gridlines = False
         value_axis.has_minor_gridlines = False
         category_axis.has_major_gridlines = False
         category_axis.format.line.color.rgb = rgb(t.card_border)
-        category_axis.tick_labels.font.size = Pt(12)
-        if not vertical:
-            category_axis.reverse_order = True  # largest bar on top, as in the source order
+        category_axis.tick_labels.font.size = Pt(11 if style == "line" else 12)
+        series = plot.series[0]
+
+        if style == "line":
+            self._style_line(c, series, chart)
+            return
+
+        plot.gap_width = 55
+        value_axis.visible = False
+        value_axis.has_major_gridlines = False
+        if style == "bars":
+            category_axis.reverse_order = True  # first category on top, as in the source order
         if chart.kind == "correlations":
             # Diverging axis only when both signs are present; r keeps its 0..1 scale.
             low = -1.15 if any(v < 0 for v in chart.values) else 0
             value_axis.minimum_scale, value_axis.maximum_scale = low, 1.15
-        else:
-            value_axis.minimum_scale = 0
-            value_axis.maximum_scale = max(chart.values) * 1.2 if chart.values else 1
+        elif chart.values:
+            top, bottom = max(chart.values), min(chart.values)
+            value_axis.maximum_scale = top * 1.2 if top > 0 else 0
+            value_axis.minimum_scale = bottom * 1.2 if bottom < 0 else 0
 
-        series = plot.series[0]
         series.invert_if_negative = False
         series.format.fill.solid()
         series.format.fill.fore_color.rgb = rgb(t.accent)
@@ -470,12 +496,46 @@ class PptxRenderer:
             if chart.kind == "correlations":
                 point.format.fill.solid()
                 point.format.fill.fore_color.rgb = rgb(t.positive if value >= 0 else t.negative)
-            label = point.data_label
-            label.position = XL_LABEL_POSITION.OUTSIDE_END
-            label.text_frame.text = self._format(value, chart.value_format)
-            run = label.text_frame.paragraphs[0].runs[0]
-            run.font.size, run.font.bold, run.font.color.rgb = Pt(12), True, rgb(t.ink)
-            run.font.name = t.font
+            self._point_label(point, self._format(value, chart.value_format))
+
+    def _style_line(self, c, series, chart: ResolvedChart) -> None:  # type: ignore[no-untyped-def]
+        t = self.t
+        value_axis, category_axis = c.value_axis, c.category_axis
+        value_axis.visible = True
+        value_axis.has_major_gridlines = True
+        value_axis.major_gridlines.format.line.color.rgb = rgb(t.card_border)
+        value_axis.format.line.fill.background()
+        value_axis.tick_labels.font.size = Pt(10)
+        value_axis.tick_labels.number_format = (
+            '0"%"' if chart.value_format == "percent" else "#,##0"
+        )
+        value_axis.tick_labels.number_format_is_linked = False
+        if min(chart.values, default=0) >= 0:
+            value_axis.minimum_scale = 0
+        # Label every nth period so long monthly series stay legible.
+        skip = max(1, math.ceil(len(chart.categories) / 8))
+        tick_skip = category_axis._element.makeelement(qn("c:tickLblSkip"), {"val": str(skip)})
+        category_axis._element.append(tick_skip)
+        series.format.line.color.rgb = rgb(t.accent)
+        series.format.line.width = Pt(2.5)
+        series.smooth = False
+        series.marker.size = 5
+        series.marker.format.fill.solid()
+        series.marker.format.fill.fore_color.rgb = rgb(t.accent)
+        series.marker.format.line.fill.background()
+        # Label only the peak and the latest value; a number on every point is noise.
+        values = chart.values
+        for i in sorted({values.index(max(values)), len(values) - 1}):
+            self._point_label(series.points[i], self._format(values[i], chart.value_format))
+            series.points[i].data_label.position = XL_LABEL_POSITION.ABOVE
+
+    def _point_label(self, point, text: str) -> None:  # type: ignore[no-untyped-def]
+        label = point.data_label
+        label.position = XL_LABEL_POSITION.OUTSIDE_END
+        label.text_frame.text = text
+        run = label.text_frame.paragraphs[0].runs[0]
+        run.font.size, run.font.bold, run.font.color.rgb = Pt(12), True, rgb(self.t.ink)
+        run.font.name = self.t.font
 
     def _pill(self, slide: Slide, x: int, y: int, text: str, level: str) -> None:
         t = self.t
@@ -504,9 +564,11 @@ class PptxRenderer:
         return [(int(t.margin + i * (w + t.gutter)), w) for i in range(n)]
 
     @staticmethod
-    def _kpi_size(value: str, count: int) -> int:
-        size = 48 if count <= 3 else 42
-        return size - 8 if len(value) > 7 else size
+    def _kpi_size(value: str, count: int, width: int) -> int:
+        """Largest size (up to 48/42pt) at which the value fits the card on one line."""
+        base = 48 if count <= 3 else 42
+        fits = int((width / 12700) / (max(len(value), 1) * 0.6))  # EMU -> pt; ~0.6em per glyph
+        return max(18, min(base, fits))
 
     def _background(self, slide: Slide, color: str) -> None:
         slide.background.fill.solid()

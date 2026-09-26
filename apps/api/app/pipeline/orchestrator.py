@@ -116,7 +116,11 @@ class Pipeline:
     def _build_deck(self, job: JobState) -> tuple[list[ResolvedSlide], bytes]:
         """Resolve references against the profile, enforce text budgets, render."""
         assert job.insights is not None and job.profile is not None
-        slides = fit_slides(resolve_slides(job.insights.slides, job.profile, job.filename))
+        slides = fit_slides(
+            resolve_slides(
+                job.insights.slides, job.profile, job.filename, findings=job.findings or []
+            )
+        )
         try:
             return slides, self._renderer.render(slides, job.filename)
         except Exception as e:

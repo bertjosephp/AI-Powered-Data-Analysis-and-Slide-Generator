@@ -28,6 +28,9 @@ KPI_LABEL = 32
 BULLET = 100
 STATEMENT = 120
 STEP = 110
+CHART_CAPTION = 70
+CHART_CAPTION_WITH_NOTE = 52
+CHART_CATEGORY = 28
 MAX_TAKEAWAYS = 3
 MAX_KPIS = 4
 MAX_BULLETS = 3
@@ -85,7 +88,18 @@ def fit_slide(slide: ResolvedSlide) -> ResolvedSlide:
             return slide.model_copy(update={"title": clip(slide.title, TITLE), "kpis": kpis})
         case ResolvedChartInsightSlide():
             bullets = [clip(b, BULLET) for b in cap(slide.bullets, MAX_BULLETS, "bullets")]
-            return slide.model_copy(update={"title": clip(slide.title, TITLE), "bullets": bullets})
+            chart = slide.chart
+            if chart is not None:
+                budget = CHART_CAPTION_WITH_NOTE if chart.reference is not None else CHART_CAPTION
+                chart = chart.model_copy(
+                    update={
+                        "caption": clip(chart.caption, budget),
+                        "categories": [clip(c, CHART_CATEGORY) for c in chart.categories],
+                    }
+                )
+            return slide.model_copy(
+                update={"title": clip(slide.title, TITLE), "bullets": bullets, "chart": chart}
+            )
         case HypothesesSlide():
             items = [
                 h.model_copy(

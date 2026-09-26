@@ -22,6 +22,7 @@ from app.schemas.deck import (
     SlideSpec,
     TitleSlide,
 )
+from app.schemas.findings import Finding
 from app.schemas.profile import ColumnProfile, DatasetProfile
 
 log = logging.getLogger(__name__)
@@ -32,8 +33,13 @@ _NUMERIC_STATS = {"mean", "median", "min", "max", "std"}
 
 
 def resolve_slides(
-    slides: list[SlideSpec], profile: DatasetProfile, dataset_name: str, today: date | None = None
+    slides: list[SlideSpec],
+    profile: DatasetProfile,
+    dataset_name: str,
+    today: date | None = None,
+    findings: list[Finding] | None = None,
 ) -> list[ResolvedSlide]:
+    by_id = {f.id: f for f in findings or []}
     resolved: list[ResolvedSlide] = []
     for slide in slides:
         if isinstance(slide, TitleSlide):
@@ -46,14 +52,18 @@ def resolve_slides(
                 )
             )
         elif isinstance(slide, KpiSlide):
-            kpis = [k for k in (_resolve_kpi(k.label, k.metric, profile) for k in slide.kpis) if k]
+            kpis = [
+                k
+                for k in (_resolve_kpi(k.label, k.metric, profile, by_id) for k in slide.kpis)
+                if k
+            ]
             resolved.append(ResolvedKpiSlide(title=slide.title, kpis=kpis))
         elif isinstance(slide, ChartInsightSlide):
             resolved.append(
                 ResolvedChartInsightSlide(
                     title=slide.title,
                     bullets=slide.bullets,
-                    chart=resolve_chart(slide.chart, profile),
+                    chart=resolve_chart(slide.chart, profile, by_id),
                 )
             )
         else:
@@ -71,8 +81,10 @@ def _title_meta(profile: DatasetProfile, dataset_name: str, today: date) -> str:
 # ---------- metrics ----------
 
 
-def _resolve_kpi(label: str, ref: MetricRef, profile: DatasetProfile) -> ResolvedKpi | None:
-    result = resolve_metric(ref, profile)
+def _resolve_kpi(
+    label: str, ref: MetricRef, profile: DatasetProfile, findings: dict[str, Finding]
+) -> ResolvedKpi | None:
+    result = resolve_metric(ref, profile, findings)
     if result is None:
         log.warning("Dropping KPI %r: cannot resolve %s", label, ref.model_dump())
         return None
@@ -80,8 +92,13 @@ def _resolve_kpi(label: str, ref: MetricRef, profile: DatasetProfile) -> Resolve
     return ResolvedKpi(label=label, value=value, caption=caption)
 
 
-def resolve_metric(ref: MetricRef, profile: DatasetProfile) -> tuple[str, str] | None:
+def resolve_metric(
+    ref: MetricRef, profile: DatasetProfile, findings: dict[str, Finding] | None = None
+) -> tuple[str, str] | None:
     """Returns (formatted value, caption naming its source), or None if not resolvable."""
+    if ref.metric == "finding":
+        finding = (findings or {}).get(ref.finding_id or "")
+        return (finding.headline, finding_caption(finding)) if finding else None
     match ref.metric:
         case "rows":
             return format_number(profile.n_rows), "rows in the dataset"
@@ -116,8 +133,14 @@ def resolve_metric(ref: MetricRef, profile: DatasetProfile) -> tuple[str, str] |
 # ---------- charts ----------
 
 
-def resolve_chart(ref: ChartRef, profile: DatasetProfile) -> ResolvedChart | None:
-    chart = _build_chart(ref, profile)
+def resolve_chart(
+    ref: ChartRef, profile: DatasetProfile, findings: dict[str, Finding] | None = None
+) -> ResolvedChart | None:
+    if ref.chart == "finding":
+        finding = (findings or {}).get(ref.finding_id or "")
+        chart = finding_chart(finding) if finding else None
+    else:
+        chart = _build_chart(ref, profile)
     if chart is None:
         log.warning("Chart %s could not be resolved; rendering text only", ref.model_dump())
     return chart
@@ -182,6 +205,43 @@ def _build_chart(ref: ChartRef, profile: DatasetProfile) -> ResolvedChart | None
             value_format="number",
         )
     return None
+
+
+def finding_chart(finding: Finding) -> ResolvedChart:
+    src = finding.chart
+    style = {"line": "line", "ranking": "bars"}.get(src.kind, "bars")
+    if finding.kind in ("bins", "concentration"):
+        style = "columns"  # ordered bands read left to right
+    fmt = "number" if src.value_format == "currency" else src.value_format
+    return ResolvedChart(
+        kind="finding",
+        caption=finding.title,
+        categories=src.categories,
+        values=src.values,
+        value_format=fmt,
+        style=style,
+        reference=src.reference,
+        reference_label=src.reference_label,
+        finding_id=finding.id,
+    )
+
+
+def finding_caption(f: Finding) -> str:
+    """A short caption for a KPI card showing a finding's headline."""
+    facts = f.facts
+    if f.kind == "segment":
+        if f.agg == "rate":
+            return f"{f.target} rate, {f.dimension} = {facts.get('top')} vs {facts.get('bottom')}"
+        return f"{f.target} for {f.dimension} = {facts.get('top')} vs overall"
+    if f.kind == "bins":
+        return f"{f.target}, {f.dimension} {facts.get('last_band')} vs {facts.get('first_band')}"
+    if f.kind == "trend":
+        return f"{f.target}: seasonal peak" if facts.get("peak_months") else f"{f.target} change"
+    if f.kind == "concentration":
+        return f"of {f.target} from the top 10% of {f.dimension}"
+    if f.kind == "drivers":
+        return f"strongest driver of {f.target}"
+    return f.title
 
 
 # ---------- helpers ----------

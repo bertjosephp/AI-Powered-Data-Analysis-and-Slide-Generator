@@ -120,15 +120,18 @@ def _slides(
     categorical = next((c for c in profile.columns if c.inferred_type == "categorical"), None)
 
     kpis = [
-        Kpi(label="Rows", metric=MetricRef(metric="rows", column=None)),
-        Kpi(label="Columns", metric=MetricRef(metric="columns", column=None)),
-        Kpi(label="Missing cells", metric=MetricRef(metric="missing_cells_pct", column=None)),
+        Kpi(label="Rows", metric=MetricRef(metric="rows", column=None, finding_id=None)),
+        Kpi(label="Columns", metric=MetricRef(metric="columns", column=None, finding_id=None)),
+        Kpi(
+            label="Missing cells",
+            metric=MetricRef(metric="missing_cells_pct", column=None, finding_id=None),
+        ),
     ]
     if numeric:
         kpis.append(
             Kpi(
                 label=f"Median {numeric.name}",
-                metric=MetricRef(metric="median", column=numeric.name),
+                metric=MetricRef(metric="median", column=numeric.name, finding_id=None),
             )
         )
 
@@ -145,7 +148,7 @@ def _slides(
                     f"The strongest pair is {top.a} and {top.b} (r = {top.r}).",
                     "Treat these as leads to test, not causes.",
                 ],
-                chart=ChartRef(chart="correlations", column=None),
+                chart=ChartRef(chart="correlations", column=None, finding_id=None),
             )
         )
     if categorical:
@@ -154,7 +157,7 @@ def _slides(
                 layout="chart_insight",
                 title=f"How {categorical.name} breaks down",
                 bullets=[f"{categorical.name} has {categorical.unique_count} distinct values."],
-                chart=ChartRef(chart="top_values", column=categorical.name),
+                chart=ChartRef(chart="top_values", column=categorical.name, finding_id=None),
             )
         )
     if numeric:
@@ -163,7 +166,7 @@ def _slides(
                 layout="chart_insight",
                 title=f"The spread of {numeric.name}",
                 bullets=[f"Median {numeric.name} is {numeric.median}; the mean is {numeric.mean}."],
-                chart=ChartRef(chart="numeric_summary", column=numeric.name),
+                chart=ChartRef(chart="numeric_summary", column=numeric.name, finding_id=None),
             )
         )
     if profile.missing_cells_total:
@@ -172,7 +175,7 @@ def _slides(
                 layout="chart_insight",
                 title="Where the data has gaps",
                 bullets=[f"{profile.missing_pct_total}% of all cells are missing."],
-                chart=ChartRef(chart="missing_values", column=None),
+                chart=ChartRef(chart="missing_values", column=None, finding_id=None),
             )
         )
     middle.append(

@@ -109,28 +109,32 @@
           "label": "Orders analyzed",
           "metric": {
             "metric": "rows",
-            "column": null
+            "column": null,
+            "finding_id": null
           }
         },
         {
           "label": "Median order value",
           "metric": {
             "metric": "median",
-            "column": "revenue"
+            "column": "revenue",
+            "finding_id": null
           }
         },
         {
           "label": "Largest order",
           "metric": {
             "metric": "max",
-            "column": "revenue"
+            "column": "revenue",
+            "finding_id": null
           }
         },
         {
           "label": "Top region share",
           "metric": {
             "metric": "top_value_share",
-            "column": "region"
+            "column": "region",
+            "finding_id": null
           }
         }
       ]
@@ -145,7 +149,8 @@
       ],
       "chart": {
         "chart": "correlations",
-        "column": null
+        "column": null,
+        "finding_id": null
       }
     },
     {
@@ -157,7 +162,8 @@
       ],
       "chart": {
         "chart": "top_values",
-        "column": "product"
+        "column": "product",
+        "finding_id": null
       }
     },
     {
@@ -169,7 +175,8 @@
       ],
       "chart": {
         "chart": "numeric_summary",
-        "column": "revenue"
+        "column": "revenue",
+        "finding_id": null
       }
     },
     {

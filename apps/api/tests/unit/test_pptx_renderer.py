@@ -115,7 +115,7 @@ def test_unresolvable_chart_renders_text_only(profile) -> None:  # type: ignore[
         layout="chart_insight",
         title="Nothing to chart",
         bullets=["One", "Two"],
-        chart=ChartRef(chart="top_values", column="ghost"),
+        chart=ChartRef(chart="top_values", column="ghost", finding_id=None),
     )
     deck = _render([spec], profile)
     assert _charts(deck.slides[0]) == []
@@ -132,7 +132,7 @@ def _worst_case_deck(profile: DatasetProfile) -> Presentation:
         words = "Mmmmmm wwwwww revenue discount returns product "
         return (words * 40)[:n]
 
-    metric = MetricRef(metric="max", column="revenue")
+    metric = MetricRef(metric="max", column="revenue", finding_id=None)
     specs: list[SlideSpec] = [
         TitleSlide(layout="title", title=text(fit.TITLE), subtitle=text(fit.SUBTITLE)),
         ExecutiveSummarySlide(
@@ -149,13 +149,13 @@ def _worst_case_deck(profile: DatasetProfile) -> Presentation:
             layout="chart_insight",
             title=text(fit.TITLE),
             bullets=[text(fit.BULLET)] * 3,
-            chart=ChartRef(chart="correlations", column=None),
+            chart=ChartRef(chart="correlations", column=None, finding_id=None),
         ),
         ChartInsightSlide(
             layout="chart_insight",
             title=text(fit.TITLE),
             bullets=[text(fit.BULLET)] * 3,
-            chart=ChartRef(chart="top_values", column="ghost"),
+            chart=ChartRef(chart="top_values", column="ghost", finding_id=None),
         ),
         HypothesesSlide(
             layout="hypotheses",

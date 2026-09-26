@@ -17,25 +17,29 @@ def _layout(name: str) -> Any:
     return Field(json_schema_extra={"enum": [name]})
 
 
-DatasetMetric = Literal["rows", "columns", "missing_cells_pct", "duplicate_rows"]
+DatasetMetric = Literal["rows", "columns", "missing_cells_pct", "duplicate_rows", "finding"]
 ColumnMetric = Literal[
     "mean", "median", "min", "max", "std", "unique_count", "missing_pct", "top_value_share"
 ]
-ChartKind = Literal["correlations", "top_values", "missing_values", "numeric_summary"]
+ChartKind = Literal["correlations", "top_values", "missing_values", "numeric_summary", "finding"]
 
 
 class MetricRef(BaseModel):
-    """A number to show. Dataset metrics take column=null; column metrics name a column."""
+    """A number to show. Dataset metrics take column=null; column metrics name a column;
+    metric="finding" shows a finding's headline and names it in finding_id."""
 
     metric: DatasetMetric | ColumnMetric
     column: str | None
+    finding_id: str | None
 
 
 class ChartRef(BaseModel):
-    """A chart to draw. top_values and numeric_summary need a column; the others take null."""
+    """A chart to draw. top_values and numeric_summary need a column; chart="finding" draws
+    a finding's chart and names it in finding_id; the others take nulls."""
 
     chart: ChartKind
     column: str | None
+    finding_id: str | None
 
 
 # ---------- what Claude writes ----------
@@ -130,6 +134,10 @@ class ResolvedChart(BaseModel):
     categories: list[str]
     values: list[float]
     value_format: Literal["number", "percent", "correlation"]
+    style: Literal["bars", "columns", "line"] = "bars"
+    reference: float | None = None  # e.g. the overall rate, noted under the chart
+    reference_label: str | None = None
+    finding_id: str | None = None
 
 
 class ResolvedChartInsightSlide(BaseModel):
