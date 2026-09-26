@@ -11,9 +11,8 @@ import { jobQueryKey } from "@/lib/hooks/useJobPolling";
 const HINTS: Record<string, string> = {
   LLM_ERROR: "Claude couldn't complete the analysis. Check the Anthropic API key, then retry.",
   LLM_SCHEMA_ERROR: "Claude's answer wasn't in the expected format. Retrying usually fixes this.",
-  GAMMA_ERROR: "Gamma couldn't build the deck. Check the Gamma API key and credits, then retry.",
-  GAMMA_TIMEOUT:
-    "Gamma is taking longer than usual. Retrying keeps waiting on the same deck, so it won't use extra credits.",
+  DECK_RENDER_ERROR:
+    "The insights are saved. Retrying renders the deck again without re-running the analysis.",
   INTERNAL_ERROR: "Something unexpected went wrong on the server.",
 };
 

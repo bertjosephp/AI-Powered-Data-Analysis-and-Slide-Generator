@@ -20,7 +20,8 @@ describe("api client", () => {
     server.use(http.get(`${API}/jobs/job123`, () => HttpResponse.json(rawFixtures.completed)));
     const job = await getJob("job123");
     expect(job.status).toBe("completed");
-    expect(job.presentation?.mock).toBe(false);
+    expect(job.presentation?.slide_count).toBe(8);
+    expect(job.deck?.[2].layout).toBe("kpi_cards");
   });
 
   it("createJob posts the file and options as multipart form data", async () => {

@@ -15,8 +15,8 @@ describe("ErrorPanel", () => {
   it("names the failed stage, shows the message and a hint", () => {
     renderWithQuery(<ErrorPanel job={jobFailed} />);
     expect(screen.getByRole("heading", { name: "Building slide deck failed" })).toBeInTheDocument();
-    expect(screen.getByText(/content policy/)).toBeInTheDocument();
-    expect(screen.getByText(/check the gamma api key and credits/i)).toBeInTheDocument();
+    expect(screen.getByText("The slide deck could not be rendered.")).toBeInTheDocument();
+    expect(screen.getByText(/renders the deck again without re-running/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /retry from building slide deck/i })).toBeEnabled();
   });
 

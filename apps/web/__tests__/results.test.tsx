@@ -98,38 +98,24 @@ describe("ColumnTable", () => {
 });
 
 describe("DeckCard", () => {
-  it("links to the deck and the export when completed", () => {
+  it("links to the .pptx download on the API", () => {
     render(<DeckCard job={jobCompleted} />);
-    expect(screen.getByRole("link", { name: /open in gamma/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /download \.pptx/i })).toHaveAttribute(
       "href",
-      "https://gamma.app/docs/gen123",
+      "http://api.test/api/v1/jobs/job123/deck.pptx",
     );
-    expect(screen.getByRole("link", { name: /download pdf/i })).toHaveAttribute(
-      "href",
-      "https://export.gamma.app/gen123.pdf",
-    );
-    expect(screen.queryByText(/mock mode/i)).not.toBeInTheDocument();
-  });
-
-  it("flags mock decks", () => {
-    const job: JobState = {
-      ...jobCompleted,
-      presentation: { ...jobCompleted.presentation!, mock: true, export_url: null },
-    };
-    render(<DeckCard job={job} />);
-    expect(screen.getByText(/mock mode/i)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /download/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/8 slides · editable PowerPoint · 47 KB/)).toBeInTheDocument();
   });
 
   it("shows progress while the deck is building", () => {
     const job: JobState = {
       ...jobRunning,
-      stages: jobRunning.stages.map((s) => ({ ...s, status: "done" as const })).map((s) =>
-        s.key === "generate_deck" ? { ...s, status: "running" as const } : s,
-      ),
+      stages: jobRunning.stages
+        .map((s) => ({ ...s, status: "done" as const }))
+        .map((s) => (s.key === "generate_deck" ? { ...s, status: "running" as const } : s)),
     };
     render(<DeckCard job={job} />);
-    expect(screen.getByText(/building your deck/i)).toBeInTheDocument();
+    expect(screen.getByText(/building your slide deck/i)).toBeInTheDocument();
   });
 
   it("renders nothing before the deck stage", () => {
@@ -153,7 +139,9 @@ describe("JobView results", () => {
     expect(await screen.findByRole("heading", { name: "Insights" })).toBeInTheDocument();
     expect(screen.getByText(/revenue is driven far more by which product/i)).toBeInTheDocument();
     expect(screen.getByText("Price mix drives revenue more than volume")).toBeInTheDocument();
-    expect(screen.getAllByText(/confidence$/)).toHaveLength(3);
+    const insights = screen.getByRole("region", { name: "Insights" });
+    expect(within(insights).getAllByText(/confidence$/)).toHaveLength(3);
     expect(screen.getByText("Your deck is ready")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Slides" })).toBeInTheDocument();
   });
 });

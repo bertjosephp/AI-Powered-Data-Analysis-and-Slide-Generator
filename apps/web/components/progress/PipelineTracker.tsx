@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 
 const HINTS: Partial<Record<Stage["key"], string>> = {
   analyze: "Usually under a minute",
-  generate_deck: "Usually 1–3 minutes",
 };
 
 const STATUS_TEXT: Record<Stage["status"], string> = {

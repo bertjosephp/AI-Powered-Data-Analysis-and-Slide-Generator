@@ -62,7 +62,7 @@ export function UploadForm() {
 
       <fieldset className="mt-6 grid gap-4 sm:grid-cols-2" disabled={busy}>
         <legend className="mb-3 text-sm font-medium">Deck options</legend>
-        <label className="text-sm text-muted">
+        <label className="text-sm text-muted sm:col-span-2">
           Audience
           <input
             className={fieldClass}
@@ -95,23 +95,6 @@ export function UploadForm() {
               update("num_slides", Math.min(25, Math.max(4, Number(e.target.value) || 4)))
             }
           />
-        </label>
-        <label className="text-sm text-muted">
-          Download format
-          <select
-            className={fieldClass}
-            value={options.export_as ?? "none"}
-            onChange={(e) =>
-              update(
-                "export_as",
-                e.target.value === "none" ? null : (e.target.value as "pdf" | "pptx"),
-              )
-            }
-          >
-            <option value="pdf">PDF</option>
-            <option value="pptx">PowerPoint (.pptx)</option>
-            <option value="none">None (view in Gamma only)</option>
-          </select>
         </label>
       </fieldset>
 

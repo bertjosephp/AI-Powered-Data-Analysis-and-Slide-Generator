@@ -16,7 +16,7 @@ const STEPS = [
   {
     icon: Presentation,
     title: "Present",
-    body: "Gamma turns the narrative into a slide deck you can open, share or download.",
+    body: "The story becomes an editable PowerPoint deck with native charts, built from your numbers.",
   },
 ];
 

@@ -65,18 +65,72 @@ export const InsightsSchema = z.object({
   analytical_questions: z.array(z.object({ question: z.string(), why_it_matters: z.string() })),
   data_quality_notes: z.array(z.string()),
   recommended_next_steps: z.array(z.string()),
-  slide_outline: z.array(z.object({ title: z.string(), bullets: z.array(z.string()) })),
+  // The raw spec Claude wrote; the UI renders the resolved `deck` on JobState instead.
+  slides: z.array(z.looseObject({ layout: z.string() })),
 });
 
 export const PresentationSchema = z.object({
-  gamma_generation_id: z.string(),
-  status: z.enum(["pending", "completed", "failed"]),
-  gamma_url: z.string().nullish(),
-  export_url: z.string().nullish(),
-  credits_deducted: z.number().nullish(),
-  error: z.string().nullish(),
-  mock: z.boolean().default(false),
+  format: z.literal("pptx"),
+  slide_count: z.number(),
+  size_bytes: z.number(),
+  download_path: z.string(),
 });
+
+// Slides as rendered (apps/api/app/schemas/deck.py ResolvedSlide): every number
+// is already resolved from the profile, so the preview never computes figures.
+const TitleSlideSchema = z.object({
+  layout: z.literal("title"),
+  title: z.string(),
+  subtitle: z.string(),
+  meta: z.string(),
+});
+const ExecutiveSummarySlideSchema = z.object({
+  layout: z.literal("executive_summary"),
+  headline: z.string(),
+  takeaways: z.array(z.object({ title: z.string(), text: z.string() })),
+});
+const KpiSlideSchema = z.object({
+  layout: z.literal("kpi_cards"),
+  title: z.string(),
+  kpis: z.array(z.object({ label: z.string(), value: z.string(), caption: z.string() })),
+});
+export const ChartSchema = z.object({
+  kind: z.enum(["correlations", "top_values", "missing_values", "numeric_summary"]),
+  caption: z.string(),
+  categories: z.array(z.string()),
+  values: z.array(z.number()),
+  value_format: z.enum(["number", "percent", "correlation"]),
+});
+const ChartInsightSlideSchema = z.object({
+  layout: z.literal("chart_insight"),
+  title: z.string(),
+  bullets: z.array(z.string()),
+  chart: ChartSchema.nullable(),
+});
+const HypothesesSlideSchema = z.object({
+  layout: z.literal("hypotheses"),
+  title: z.string(),
+  items: z.array(
+    z.object({
+      statement: z.string(),
+      test: z.string(),
+      confidence: z.enum(["low", "medium", "high"]),
+    }),
+  ),
+});
+const NextStepsSlideSchema = z.object({
+  layout: z.literal("next_steps"),
+  title: z.string(),
+  steps: z.array(z.string()),
+});
+export const SlideSchema = z.discriminatedUnion("layout", [
+  TitleSlideSchema,
+  ExecutiveSummarySlideSchema,
+  KpiSlideSchema,
+  ChartInsightSlideSchema,
+  HypothesesSlideSchema,
+  NextStepsSlideSchema,
+]);
 
 export const StageKeySchema = z.enum(["ingest", "profile", "analyze", "generate_deck"]);
 
@@ -93,8 +147,6 @@ export const AnalysisOptionsSchema = z.object({
   num_slides: z.number().int().min(4).max(25),
   tone: z.enum(["executive", "technical", "casual"]),
   audience: z.string().max(200),
-  theme_id: z.string().max(100).nullish(),
-  export_as: z.enum(["pdf", "pptx"]).nullish(),
 });
 
 export const JobStateSchema = z.object({
@@ -107,6 +159,7 @@ export const JobStateSchema = z.object({
   stages: z.array(StageSchema),
   profile: DatasetProfileSchema.nullish(),
   insights: InsightsSchema.nullish(),
+  deck: z.array(SlideSchema).nullish(),
   presentation: PresentationSchema.nullish(),
   error: z.object({ stage: StageKeySchema.nullable(), code: z.string(), message: z.string() }).nullish(),
 });
@@ -124,6 +177,8 @@ export type ColumnProfile = z.infer<typeof ColumnProfileSchema>;
 export type DatasetProfile = z.infer<typeof DatasetProfileSchema>;
 export type Insights = z.infer<typeof InsightsSchema>;
 export type Presentation = z.infer<typeof PresentationSchema>;
+export type Slide = z.infer<typeof SlideSchema>;
+export type Chart = z.infer<typeof ChartSchema>;
 export type Stage = z.infer<typeof StageSchema>;
 export type StageKey = z.infer<typeof StageKeySchema>;
 export type AnalysisOptions = z.infer<typeof AnalysisOptionsSchema>;
@@ -134,5 +189,4 @@ export const DEFAULT_OPTIONS: AnalysisOptions = {
   num_slides: 10,
   tone: "executive",
   audience: "business stakeholders",
-  export_as: "pdf",
 };

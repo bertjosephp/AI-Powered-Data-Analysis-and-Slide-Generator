@@ -454,7 +454,9 @@ class PptxRenderer:
         if not vertical:
             category_axis.reverse_order = True  # largest bar on top, as in the source order
         if chart.kind == "correlations":
-            value_axis.minimum_scale, value_axis.maximum_scale = -1.15, 1.15
+            # Diverging axis only when both signs are present; r keeps its 0..1 scale.
+            low = -1.15 if any(v < 0 for v in chart.values) else 0
+            value_axis.minimum_scale, value_axis.maximum_scale = low, 1.15
         else:
             value_axis.minimum_scale = 0
             value_axis.maximum_scale = max(chart.values) * 1.2 if chart.values else 1

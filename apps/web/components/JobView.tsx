@@ -11,6 +11,7 @@ import { ExecutiveSummary } from "@/components/insights/ExecutiveSummary";
 import { HypothesesList } from "@/components/insights/HypothesesList";
 import { NotesList, QuestionsList } from "@/components/insights/QuestionsList";
 import { DeckCard } from "@/components/presentation/DeckCard";
+import { DeckPreview } from "@/components/presentation/DeckPreview";
 import { ErrorPanel } from "@/components/progress/ErrorPanel";
 import { PipelineTracker } from "@/components/progress/PipelineTracker";
 import { ApiError } from "@/lib/api/client";
@@ -77,6 +78,10 @@ export function JobView({ jobId, pollIntervalMs }: Props) {
         <ErrorPanel job={job} />
         <DeckCard job={job} />
       </div>
+
+      {job.deck && job.deck.length > 0 && (
+        <DeckPreview slides={job.deck} datasetName={job.filename} />
+      )}
 
       {job.insights ? (
         <section className="space-y-4" aria-labelledby="insights-heading">
