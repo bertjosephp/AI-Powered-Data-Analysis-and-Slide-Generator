@@ -33,7 +33,8 @@
       "kind": "segment",
       "target": "shipping_days",
       "dimension": "region",
-      "top": "West"
+      "top": "West",
+      "tier": "secondary"
     },
     {
       "id": "q4_revenue",

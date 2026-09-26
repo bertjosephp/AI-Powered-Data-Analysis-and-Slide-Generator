@@ -168,6 +168,7 @@ def ecommerce(rng: np.random.Generator) -> tuple[pd.DataFrame, Manifest]:
                 "target": "shipping_days",
                 "dimension": "region",
                 "top": "West",
+                "tier": "secondary",  # one step removed from the outcome; checked directly
             },
             {
                 "id": "q4_revenue",
@@ -218,7 +219,7 @@ def saas_churn(rng: np.random.Generator) -> tuple[pd.DataFrame, Manifest]:
     monthly_revenue = np.round(seats * price * np.where(billing == "Annual", 0.83, 1.0), 2)
     tenure = np.clip(np.round(rng.gamma(2.2, 7.5, n)), 1, 48).astype(int)
     logins = np.round(np.clip(rng.gamma(2.0, 2.4, n), 0, 30), 1)
-    tickets = rng.poisson(np.where(plan == "Basic", 2.2, 2.8), n)
+    tickets = rng.negative_binomial(2, np.where(plan == "Basic", 0.42, 0.38), n)  # long tail
     nps = np.clip(np.round(rng.normal(7.2, 2.2, n)), 0, 10)
     onboarding = rng.random(n) < 0.72
 
