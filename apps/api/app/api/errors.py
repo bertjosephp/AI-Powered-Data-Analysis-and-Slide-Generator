@@ -17,6 +17,7 @@ _HTTP_STATUS = {
     ErrorCode.JOB_NOT_FOUND: 404,
     ErrorCode.JOB_NOT_RETRYABLE: 409,
     ErrorCode.PROFILE_NOT_READY: 409,
+    ErrorCode.DECK_NOT_READY: 409,
 }
 
 

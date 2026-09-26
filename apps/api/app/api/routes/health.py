@@ -11,7 +11,6 @@ router = APIRouter(tags=["health"])
 class HealthResponse(BaseModel):
     status: str
     anthropic_configured: bool
-    gamma_configured: bool
     mock_external: bool
 
 
@@ -20,6 +19,5 @@ def health(settings: Annotated[Settings, Depends(get_settings)]) -> HealthRespon
     return HealthResponse(
         status="ok",
         anthropic_configured=bool(settings.anthropic_api_key),
-        gamma_configured=bool(settings.gamma_api_key),
         mock_external=settings.mock_external,
     )

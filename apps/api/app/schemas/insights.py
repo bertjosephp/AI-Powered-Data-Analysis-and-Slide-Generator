@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from app.schemas.deck import SlideSpec
+
 
 class KeyFinding(BaseModel):
     title: str
@@ -24,11 +26,6 @@ class AnalyticalQuestion(BaseModel):
     why_it_matters: str
 
 
-class SlideOutline(BaseModel):
-    title: str
-    bullets: list[str]
-
-
 class Insights(BaseModel):
     executive_summary: str
     key_findings: list[KeyFinding]
@@ -36,4 +33,4 @@ class Insights(BaseModel):
     analytical_questions: list[AnalyticalQuestion]
     data_quality_notes: list[str]
     recommended_next_steps: list[str]
-    slide_outline: list[SlideOutline]
+    slides: list[SlideSpec]

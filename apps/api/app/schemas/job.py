@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.deck import ResolvedSlide
 from app.schemas.insights import Insights
 from app.schemas.options import AnalysisOptions
 from app.schemas.presentation import Presentation
@@ -51,6 +52,7 @@ class JobState(BaseModel):
     )
     profile: DatasetProfile | None = None
     insights: Insights | None = None
+    deck: list[ResolvedSlide] | None = None  # the slides as rendered, for the web preview
     presentation: Presentation | None = None
     error: JobError | None = None
 

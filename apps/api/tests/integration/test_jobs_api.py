@@ -1,20 +1,22 @@
-"""End-to-end through the HTTP API with the LLM and Gamma faked.
+"""End-to-end through the HTTP API with the LLM faked and the real deck renderer.
 
 TestClient runs background tasks before returning the response, so the pipeline
 has finished by the time POST /jobs returns.
 """
 
+import io
 import json
 from pathlib import Path
 from typing import Any
 
 from fastapi.testclient import TestClient
+from pptx import Presentation as PptxFile
 
 from app.config import Settings
 from app.errors import AppError, ErrorCode
+from app.schemas.deck import ResolvedSlide
 from app.schemas.insights import Insights
 from app.schemas.options import AnalysisOptions
-from app.schemas.presentation import Presentation
 from app.schemas.profile import DatasetProfile
 from app.services.llm.mock import MockAnalyst
 from tests.conftest import make_client
@@ -46,32 +48,20 @@ class CountingAnalyst:
         return await MockAnalyst(latency_s=0).generate(profile, options, dataset_name)
 
 
-class ScriptedGamma:
-    """Returns (or raises) queued outcomes from wait_for_completion."""
+class FlakyRenderer:
+    """Fails the first `failures` renders, then renders for real."""
 
-    def __init__(self, outcomes: list[str]) -> None:
-        self.outcomes = outcomes
-        self.created: list[dict[str, Any]] = []
-        self.waited: list[str] = []
+    def __init__(self, failures: int) -> None:
+        self.calls = 0
+        self.failures = failures
 
-    async def aclose(self) -> None:
-        pass
+    def render(self, slides: list[ResolvedSlide], dataset_name: str) -> bytes:
+        from app.services.deck.pptx_renderer import PptxRenderer
 
-    async def create_generation(self, body: dict[str, Any]) -> str:
-        self.created.append(body)
-        return f"gen-{len(self.created)}"
-
-    async def wait_for_completion(self, generation_id: str) -> Presentation:
-        self.waited.append(generation_id)
-        outcome = self.outcomes.pop(0)
-        if outcome == "timeout":
-            raise AppError(ErrorCode.GAMMA_TIMEOUT, "Gamma did not finish in time.")
-        return Presentation(
-            gamma_generation_id=generation_id,
-            status="failed" if outcome == "failed" else "completed",
-            gamma_url=None if outcome == "failed" else f"https://gamma.app/docs/{generation_id}",
-            error="content policy" if outcome == "failed" else None,
-        )
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise RuntimeError("renderer exploded")
+        return PptxRenderer().render(slides, dataset_name)
 
 
 # ---------- happy path ----------
@@ -93,8 +83,15 @@ def test_full_pipeline_completes(client: TestClient) -> None:
     assert job["filename"] == "sample.csv"
     assert job["options"]["audience"] == "the board"
     assert job["profile"]["n_rows"] == 40
-    assert len(job["insights"]["slide_outline"]) == 6
-    assert job["presentation"]["status"] == "completed" and job["presentation"]["mock"] is True
+    assert len(job["insights"]["slides"]) == 6
+    assert [s["layout"] for s in job["deck"]][:3] == ["title", "executive_summary", "kpi_cards"]
+    assert job["deck"][2]["kpis"][0] == {
+        "label": "Rows",
+        "value": "40",
+        "caption": "rows in the dataset",
+    }
+    assert job["presentation"]["slide_count"] == 6
+    assert job["presentation"]["download_path"] == f"/jobs/{job_id}/deck.pptx"
     assert job["error"] is None
 
     profile = client.get(f"{JOBS}/{job_id}/profile")
@@ -169,38 +166,49 @@ def test_llm_failure_then_retry_reuses_profile(settings: Settings) -> None:
     assert analyst.calls == 2
 
 
-def test_gamma_timeout_then_retry_resumes_same_generation(settings: Settings) -> None:
+def test_render_failure_then_retry_renders_again(settings: Settings) -> None:
     analyst = CountingAnalyst()
-    gamma = ScriptedGamma(["timeout", "completed"])
-    with make_client(settings, analyst=analyst, gamma=gamma) as client:
+    renderer = FlakyRenderer(failures=1)
+    with make_client(settings, analyst=analyst, renderer=renderer) as client:
         job_id = _upload(client).json()["job_id"]
         failed = client.get(f"{JOBS}/{job_id}").json()
-        assert failed["error"]["code"] == "GAMMA_TIMEOUT"
-        assert failed["presentation"]["status"] == "pending"
+        assert failed["error"] == {
+            "stage": "generate_deck",
+            "code": "DECK_RENDER_ERROR",
+            "message": "The slide deck could not be rendered.",
+        }
+        assert client.get(f"{JOBS}/{job_id}/deck.pptx").status_code == 409
 
         client.post(f"{JOBS}/{job_id}/retry")
         done = client.get(f"{JOBS}/{job_id}").json()
+        assert done["status"] == "completed"
+        assert client.get(f"{JOBS}/{job_id}/deck.pptx").status_code == 200
 
-    assert done["status"] == "completed"
-    assert done["presentation"]["gamma_url"] == "https://gamma.app/docs/gen-1"
-    assert len(gamma.created) == 1 and gamma.waited == ["gen-1", "gen-1"]
     assert analyst.calls == 1  # insights were not regenerated
+    assert renderer.calls == 2
 
 
-def test_gamma_failed_generation_is_recreated_on_retry(settings: Settings) -> None:
-    gamma = ScriptedGamma(["failed", "completed"])
-    with make_client(settings, gamma=gamma) as client:
-        job_id = _upload(client).json()["job_id"]
-        failed = client.get(f"{JOBS}/{job_id}").json()
-        assert failed["error"]["code"] == "GAMMA_ERROR"
-        assert "content policy" in failed["error"]["message"]
+# ---------- deck download ----------
 
-        client.post(f"{JOBS}/{job_id}/retry")
-        done = client.get(f"{JOBS}/{job_id}").json()
 
-    assert done["status"] == "completed"
-    assert len(gamma.created) == 2
-    assert gamma.created[0]["numCards"] == len(done["insights"]["slide_outline"])
+def test_deck_download_is_a_valid_pptx(client: TestClient) -> None:
+    job_id = _upload(client, data={"options": json.dumps({"num_slides": 8})}).json()["job_id"]
+    res = client.get(f"{JOBS}/{job_id}/deck.pptx")
+
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    )
+    assert 'filename="sample-deck.pptx"' in res.headers["content-disposition"]
+    deck = PptxFile(io.BytesIO(res.content))
+    job = client.get(f"{JOBS}/{job_id}").json()
+    assert len(deck.slides) == job["presentation"]["slide_count"]
+    assert len(res.content) == job["presentation"]["size_bytes"]
+
+
+def test_deck_download_for_unknown_job_is_404(client: TestClient) -> None:
+    res = client.get(f"{JOBS}/nope/deck.pptx")
+    assert res.status_code == 404 and res.json()["error"]["code"] == "JOB_NOT_FOUND"
 
 
 def test_retry_of_completed_job_is_rejected(client: TestClient) -> None:

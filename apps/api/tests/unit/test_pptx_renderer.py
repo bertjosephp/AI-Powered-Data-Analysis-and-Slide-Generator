@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 from pptx import Presentation
 from pptx.util import Emu, Pt
-from pydantic import TypeAdapter
 
 from app.schemas.deck import (
     ChartInsightSlide,
@@ -29,6 +28,7 @@ from app.schemas.deck import (
     Takeaway,
     TitleSlide,
 )
+from app.schemas.insights import Insights
 from app.schemas.profile import DatasetProfile
 from app.services.deck import fit
 from app.services.deck.fit import fit_slides
@@ -56,8 +56,8 @@ def _render(specs: list[SlideSpec], profile: DatasetProfile) -> Presentation:
 
 @pytest.fixture(scope="module")
 def deck(profile: DatasetProfile) -> Presentation:
-    specs = TypeAdapter(list[SlideSpec]).validate_json((FIXTURES / "slides.json").read_text())
-    return _render(specs, profile)
+    insights = Insights.model_validate_json((FIXTURES / "llm_response.json").read_text())
+    return _render(insights.slides, profile)
 
 
 def _texts(slide) -> list[str]:  # type: ignore[no-untyped-def]

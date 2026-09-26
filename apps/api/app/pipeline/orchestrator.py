@@ -3,7 +3,8 @@
 Ingest happens in the upload request so bad files fail fast with a 400; the
 parsed DataFrame is handed to `run` and dropped once the profile exists. Each
 stage's output is saved on the job, so `run` on a failed job resumes from the
-first stage without output.
+first stage without output. The deck stage is local and deterministic, so a
+retry simply renders again.
 """
 
 import logging
@@ -15,12 +16,15 @@ from starlette.concurrency import run_in_threadpool
 
 from app.config import Settings
 from app.errors import AppError, ErrorCode
+from app.schemas.deck import ResolvedSlide
 from app.schemas.job import JobError, JobState, StageKey, utcnow
 from app.schemas.presentation import Presentation
+from app.services.deck.fit import fit_slides
+from app.services.deck.pptx_renderer import DeckRenderer
+from app.services.deck.resolve import resolve_slides
 from app.services.eda.profiler import build_profile
-from app.services.gamma.client import GammaGenerator
-from app.services.gamma.formatter import to_gamma_request
 from app.services.llm.analyst import InsightsGenerator
+from app.store.artifact_store import ArtifactStore
 from app.store.job_store import JobStore
 
 log = logging.getLogger(__name__)
@@ -35,12 +39,14 @@ class Pipeline:
         self,
         store: JobStore,
         analyst: InsightsGenerator,
-        gamma: GammaGenerator,
+        renderer: DeckRenderer,
+        artifacts: ArtifactStore,
         settings: Settings,
     ) -> None:
         self._store = store
         self._analyst = analyst
-        self._gamma = gamma
+        self._renderer = renderer
+        self._artifacts = artifacts
         self._settings = settings
 
     async def run(self, job_id: str, df: pd.DataFrame | None = None) -> None:
@@ -71,33 +77,31 @@ class Pipeline:
                     )
 
             async with self._stage(job, "generate_deck"):
-                await self._generate_deck(job)
+                slides, data = await run_in_threadpool(self._build_deck, job)
+                self._artifacts.put(job.job_id, data)
+                job.deck = slides
+                job.presentation = Presentation(
+                    slide_count=len(slides),
+                    size_bytes=len(data),
+                    download_path=f"/jobs/{job.job_id}/deck.pptx",
+                )
         except _StageFailed:
             return
 
         job.status = "completed"
         self._store.save(job)
 
-    async def _generate_deck(self, job: JobState) -> None:
-        assert job.insights is not None
-        # A pending generation (e.g. one that timed out) is resumed rather than
-        # re-created, so a retry doesn't pay for a second deck.
-        if job.presentation is None or job.presentation.status == "failed":
-            body = to_gamma_request(
-                job.insights, job.options, job.filename, self._settings.gamma_image_source
-            )
-            generation_id = await self._gamma.create_generation(body)
-            job.presentation = Presentation(gamma_generation_id=generation_id, status="pending")
-            self._store.save(job)
-
-        job.presentation = await self._gamma.wait_for_completion(
-            job.presentation.gamma_generation_id
-        )
-        if job.presentation.status == "failed":
+    def _build_deck(self, job: JobState) -> tuple[list[ResolvedSlide], bytes]:
+        """Resolve references against the profile, enforce text budgets, render."""
+        assert job.insights is not None and job.profile is not None
+        slides = fit_slides(resolve_slides(job.insights.slides, job.profile, job.filename))
+        try:
+            return slides, self._renderer.render(slides, job.filename)
+        except Exception as e:
+            log.exception("Rendering the deck for job %s failed", job.job_id)
             raise AppError(
-                ErrorCode.GAMMA_ERROR,
-                f"Gamma could not generate the deck: {job.presentation.error}",
-            )
+                ErrorCode.DECK_RENDER_ERROR, "The slide deck could not be rendered."
+            ) from e
 
     @asynccontextmanager
     async def _stage(self, job: JobState, key: StageKey) -> AsyncIterator[None]:

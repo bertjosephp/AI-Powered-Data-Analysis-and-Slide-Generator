@@ -66,8 +66,8 @@ class ClaudeAnalyst:
             insights: Insights | None = response.parsed_output
             if insights is None:
                 last_problem = f"no structured output (stop_reason={response.stop_reason})"
-            elif not insights.slide_outline:
-                last_problem = "the slide outline was empty"
+            elif not insights.slides:
+                last_problem = "the deck had no slides"
             else:
                 return insights
             log.warning("Insights attempt %d: %s", attempt, last_problem)

@@ -1,8 +1,9 @@
 from pathlib import PurePath
 from typing import Annotated
+from urllib.parse import quote
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Response, UploadFile
 from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
 
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 ServicesDep = Annotated[Services, Depends(get_services)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 MAX_FILENAME_LENGTH = 200
+PPTX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
 
 @router.post("", status_code=202, response_model=JobCreated)
@@ -56,6 +58,26 @@ def get_job_profile(job_id: str, services: ServicesDep) -> DatasetProfile:
     return job.profile
 
 
+@router.get(
+    "/{job_id}/deck.pptx",
+    response_class=Response,
+    responses={200: {"content": {PPTX_MEDIA_TYPE: {}}, "description": "The slide deck"}},
+)
+def download_deck(job_id: str, services: ServicesDep) -> Response:
+    job = _get_or_404(services, job_id)
+    data = services.artifacts.get(job_id)
+    if data is None:
+        if job.status == "completed":
+            raise AppError(ErrorCode.JOB_NOT_FOUND, "The deck has expired. Upload the file again.")
+        raise AppError(ErrorCode.DECK_NOT_READY, "The slide deck is not ready yet.")
+    filename = f"{PurePath(job.filename).stem[:80] or 'analysis'}-deck.pptx"
+    return Response(
+        content=data,
+        media_type=PPTX_MEDIA_TYPE,
+        headers={"Content-Disposition": _attachment(filename)},
+    )
+
+
 @router.post("/{job_id}/retry", status_code=202, response_model=JobCreated)
 def retry_job(job_id: str, background: BackgroundTasks, services: ServicesDep) -> JobCreated:
     job = _get_or_404(services, job_id)
@@ -82,6 +104,12 @@ def _get_or_404(services: Services, job_id: str) -> JobState:
     if job is None:
         raise AppError(ErrorCode.JOB_NOT_FOUND, "Job not found. It may have expired.")
     return job
+
+
+def _attachment(filename: str) -> str:
+    """Content-Disposition with an ASCII fallback and the UTF-8 name (RFC 6266)."""
+    ascii_name = filename.encode("ascii", "ignore").decode().replace('"', "") or "deck.pptx"
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename)}"
 
 
 def _parse_options(raw: str | None) -> AnalysisOptions:

@@ -1,4 +1,4 @@
-"""Builds the service graph once per app, choosing real or mock external clients."""
+"""Builds the service graph once per app, choosing the real or mock analyst."""
 
 from dataclasses import dataclass
 
@@ -6,25 +6,26 @@ from fastapi import Request
 
 from app.config import Settings
 from app.pipeline.orchestrator import Pipeline
-from app.services.gamma.client import GammaClient, GammaGenerator
-from app.services.gamma.mock import MockGammaClient
+from app.services.deck.pptx_renderer import DeckRenderer, PptxRenderer
+from app.services.deck.theme import Theme
 from app.services.llm.analyst import ClaudeAnalyst, InsightsGenerator
 from app.services.llm.client import make_anthropic_client
 from app.services.llm.mock import MockAnalyst
+from app.store.artifact_store import ArtifactStore, InMemoryArtifactStore
 from app.store.job_store import InMemoryJobStore, JobStore
 
 
 @dataclass
 class Services:
     store: JobStore
+    artifacts: ArtifactStore
     pipeline: Pipeline
-    gamma: GammaGenerator
 
 
 def build_services(
     settings: Settings,
     analyst: InsightsGenerator | None = None,
-    gamma: GammaGenerator | None = None,
+    renderer: DeckRenderer | None = None,
 ) -> Services:
     if analyst is None:
         analyst = (
@@ -32,19 +33,14 @@ def build_services(
             if settings.mock_external
             else ClaudeAnalyst(make_anthropic_client(settings), settings.llm_model)
         )
-    if gamma is None:
-        gamma = (
-            MockGammaClient()
-            if settings.mock_external
-            else GammaClient(
-                settings.gamma_api_key,
-                settings.gamma_base_url,
-                settings.gamma_timeout_s,
-                settings.gamma_poll_interval_s,
-            )
-        )
+    renderer = renderer or PptxRenderer(Theme(font=settings.deck_font))
     store = InMemoryJobStore(settings.job_ttl_s)
-    return Services(store=store, pipeline=Pipeline(store, analyst, gamma, settings), gamma=gamma)
+    artifacts = InMemoryArtifactStore(settings.job_ttl_s)
+    return Services(
+        store=store,
+        artifacts=artifacts,
+        pipeline=Pipeline(store, analyst, renderer, artifacts, settings),
+    )
 
 
 def get_services(request: Request) -> Services:

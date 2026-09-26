@@ -87,8 +87,8 @@ async def test_retries_once_on_invalid_output_then_succeeds(profile, good_insigh
 
 
 async def test_gives_up_with_schema_error(profile, good_insights) -> None:  # type: ignore[no-untyped-def]
-    empty_outline = good_insights.model_copy(update={"slide_outline": []})
-    client = _client(_ok(None, "max_tokens"), _ok(empty_outline))
+    no_slides = good_insights.model_copy(update={"slides": []})
+    client = _client(_ok(None, "max_tokens"), _ok(no_slides))
     with pytest.raises(AppError) as exc:
         await ClaudeAnalyst(client, "m").generate(profile, OPTIONS, "x.csv")
     assert exc.value.code == ErrorCode.LLM_SCHEMA_ERROR
@@ -128,5 +128,22 @@ async def test_mock_analyst_is_deterministic_and_respects_slide_count(profile) -
     a = await mock.generate(profile, OPTIONS, "sample.csv")
     b = await mock.generate(profile, OPTIONS, "sample.csv")
     assert a == b
-    assert len(a.slide_outline) == 6
+    layouts = [s.layout for s in a.slides]
+    assert len(layouts) == 6
+    assert layouts[:3] == ["title", "executive_summary", "kpi_cards"]
+    assert layouts[-1] == "next_steps"
     assert any("unit_price" in f.title for f in a.key_findings)
+
+
+async def test_mock_analyst_slides_resolve_against_the_profile(profile) -> None:  # type: ignore[no-untyped-def]
+    from app.schemas.deck import ResolvedChartInsightSlide, ResolvedKpiSlide
+    from app.services.deck.resolve import resolve_slides
+
+    insights = await MockAnalyst(latency_s=0).generate(
+        profile, AnalysisOptions(num_slides=12), "sample.csv"
+    )
+    resolved = resolve_slides(insights.slides, profile, "sample.csv")
+    kpis = [s for s in resolved if isinstance(s, ResolvedKpiSlide)]
+    charts = [s for s in resolved if isinstance(s, ResolvedChartInsightSlide)]
+    assert kpis and len(kpis[0].kpis) == 4  # every mock reference resolves
+    assert len(charts) == 4 and all(c.chart is not None for c in charts)

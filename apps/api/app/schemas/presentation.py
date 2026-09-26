@@ -1,15 +1,10 @@
-from typing import Literal
-
 from pydantic import BaseModel
-
-GenerationStatus = Literal["pending", "completed", "failed"]
 
 
 class Presentation(BaseModel):
-    gamma_generation_id: str
-    status: GenerationStatus
-    gamma_url: str | None = None
-    export_url: str | None = None
-    credits_deducted: float | None = None
-    error: str | None = None
-    mock: bool = False
+    """The rendered deck. The file itself is served from `download_path` (under /api/v1)."""
+
+    format: str = "pptx"
+    slide_count: int
+    size_bytes: int
+    download_path: str

@@ -9,7 +9,6 @@ def test_health_reports_ok_and_config(client: TestClient) -> None:
     assert res.json() == {
         "status": "ok",
         "anthropic_configured": False,
-        "gamma_configured": False,
         "mock_external": True,
     }
 

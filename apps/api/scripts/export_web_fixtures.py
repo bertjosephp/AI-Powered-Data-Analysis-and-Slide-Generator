@@ -12,6 +12,8 @@ from app.schemas.insights import Insights
 from app.schemas.job import JobError, JobState
 from app.schemas.options import AnalysisOptions
 from app.schemas.presentation import Presentation
+from app.services.deck.fit import fit_slides
+from app.services.deck.resolve import resolve_slides
 from app.services.eda.profiler import build_profile
 from app.services.ingestion.loader import load_dataset
 
@@ -50,23 +52,24 @@ def main() -> None:
     for stage in completed.stages:
         stage.status = "done"
     completed.profile, completed.insights = profile, insights
+    completed.deck = fit_slides(
+        resolve_slides(insights.slides, profile, "sample.csv", today=T0.date())
+    )
     completed.presentation = Presentation(
-        gamma_generation_id="gen123",
-        status="completed",
-        gamma_url="https://gamma.app/docs/gen123",
-        export_url="https://export.gamma.app/gen123.pdf",
-        credits_deducted=40,
+        slide_count=len(completed.deck),
+        size_bytes=48_213,
+        download_path="/jobs/job123/deck.pptx",
     )
 
     failed = _job()
     failed.status = "failed"
-    for key in ("ingest", "profile", "analyze"):
-        failed.stage(key).status = "done"
-    message = "Gamma could not generate the deck: content policy"
+    for stage in failed.stages[:3]:
+        stage.status = "done"
+    message = "The slide deck could not be rendered."
     failed.stage("generate_deck").status = "failed"
     failed.stage("generate_deck").message = message
     failed.profile, failed.insights = profile, insights
-    failed.error = JobError(stage="generate_deck", code="GAMMA_ERROR", message=message)
+    failed.error = JobError(stage="generate_deck", code="DECK_RENDER_ERROR", message=message)
 
     OUT.mkdir(parents=True, exist_ok=True)
     for name, job in (("running", running), ("completed", completed), ("failed", failed)):

@@ -1,6 +1,4 @@
 import logging
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,12 +15,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     settings = settings or get_settings()
     services = services or build_services(settings)
 
-    @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        yield
-        await services.gamma.aclose()
-
-    app = FastAPI(title="AI Data Analysis & Slide Generator", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="AI Data Analysis & Slide Generator", version="0.1.0")
     app.state.services = services
 
     app.add_middleware(

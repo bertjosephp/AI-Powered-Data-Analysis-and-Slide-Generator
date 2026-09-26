@@ -14,13 +14,8 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = ""
     llm_model: str = "claude-sonnet-5"
-    gamma_api_key: str = ""
-    gamma_base_url: str = "https://public-api.gamma.app/v1.0"
-    # Gamma generations typically take 1-3 minutes.
-    gamma_timeout_s: float = Field(default=300.0, gt=0)
-    gamma_poll_interval_s: float = Field(default=5.0, gt=0)
-    # AI-generated images cost 2-125 credits each; see Gamma's imageOptions.source values.
-    gamma_image_source: str = "pictographic"
+    # Deck typeface. Aptos is the default in current Office; override for other viewers.
+    deck_font: str = "Aptos"
 
     max_upload_mb: int = Field(default=25, gt=0)
     profile_sample_rows: int = Field(default=200_000, gt=0)
