@@ -47,6 +47,7 @@ cp .env.example .env && docker compose up --build
 | Command | What it does |
 |---|---|
 | `make test` | Backend pytest and web vitest |
+| `make e2e` | Playwright end to end against the real API in mock mode. It uses your installed Chrome; stop `make dev` first |
 | `make lint` | ruff and mypy (strict) for the backend, eslint for the web app |
 | `cd apps/web && pnpm typecheck` | Next route types and tsc |
 | `apps/api/.venv/bin/python apps/api/scripts/smoke_llm.py` | Real Claude call on the sample file |

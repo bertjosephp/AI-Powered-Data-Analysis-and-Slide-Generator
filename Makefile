@@ -5,7 +5,7 @@ VENV := $(API_DIR)/.venv
 VBIN := $(VENV)/bin
 
 .DEFAULT_GOAL := help
-.PHONY: help install install-api install-web dev dev-api dev-web test test-api test-web lint lint-api lint-web fmt
+.PHONY: help install install-api install-web dev dev-api dev-web test test-api test-web e2e lint lint-api lint-web fmt
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -36,6 +36,9 @@ test-api: ## Run backend tests
 
 test-web: ## Run frontend tests
 	@if [ -f $(WEB_DIR)/package.json ]; then cd $(WEB_DIR) && pnpm test; else echo "web app not scaffolded yet"; fi
+
+e2e: ## Playwright end-to-end run (mock mode; uses local Chrome; stop `make dev` first)
+	cd $(WEB_DIR) && pnpm e2e
 
 lint: lint-api lint-web ## Lint everything
 
