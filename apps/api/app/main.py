@@ -1,15 +1,29 @@
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health
+from app.api.errors import register_error_handlers
+from app.api.routes import health, jobs
 from app.config import Settings, get_settings
+from app.services.container import Services, build_services
 
 API_PREFIX = "/api/v1"
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, services: Services | None = None) -> FastAPI:
     settings = settings or get_settings()
-    app = FastAPI(title="AI Data Analysis & Slide Generator", version="0.1.0")
+    services = services or build_services(settings)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        yield
+        await services.gamma.aclose()
+
+    app = FastAPI(title="AI Data Analysis & Slide Generator", version="0.1.0", lifespan=lifespan)
+    app.state.services = services
 
     app.add_middleware(
         CORSMiddleware,
@@ -17,8 +31,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    register_error_handlers(app)
     app.include_router(health.router, prefix=API_PREFIX)
+    app.include_router(jobs.router, prefix=API_PREFIX)
     return app
 
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 app = create_app()

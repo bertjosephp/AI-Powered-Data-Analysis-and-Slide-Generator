@@ -14,6 +14,9 @@ class MockGammaClient:
     def __init__(self, latency_s: float = MOCK_LATENCY_S) -> None:
         self._latency_s = latency_s
 
+    async def aclose(self) -> None:
+        pass
+
     async def create_generation(self, body: dict[str, Any]) -> str:
         digest = hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
         return f"mock-{digest[:12]}"

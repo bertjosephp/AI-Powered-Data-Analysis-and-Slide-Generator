@@ -11,4 +11,5 @@ class Presentation(BaseModel):
     gamma_url: str | None = None
     export_url: str | None = None
     credits_deducted: float | None = None
+    error: str | None = None
     mock: bool = False

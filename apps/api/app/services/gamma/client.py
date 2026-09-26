@@ -35,6 +35,8 @@ _STATUS_MESSAGES = {
 class GammaGenerator(Protocol):
     async def create_generation(self, body: dict[str, Any]) -> str: ...
 
+    async def aclose(self) -> None: ...
+
     async def wait_for_completion(self, generation_id: str) -> Presentation: ...
 
 
@@ -74,26 +76,23 @@ class GammaClient:
         status = data.get("status")
         if status not in ("pending", "completed", "failed"):
             raise AppError(ErrorCode.GAMMA_ERROR, f"Unexpected Gamma status: {status!r}.")
-        if status == "failed":
-            error = data.get("error") or {}
-            raise AppError(
-                ErrorCode.GAMMA_ERROR,
-                f"Gamma could not generate the deck: {error.get('message', 'unknown error')}",
-            )
         credits = data.get("credits") or {}
+        error = data.get("error") or {}
         return Presentation(
             gamma_generation_id=generation_id,
             status=status,
             gamma_url=data.get("gammaUrl"),
             export_url=data.get("exportUrl"),
             credits_deducted=credits.get("deducted"),
+            error=error.get("message", "unknown error") if status == "failed" else None,
         )
 
     async def wait_for_completion(self, generation_id: str) -> Presentation:
+        """Poll until the generation is completed or failed; both are returned."""
         deadline = time.monotonic() + self._timeout_s
         while True:
             presentation = await self.get_generation(generation_id)
-            if presentation.status == "completed":
+            if presentation.status != "pending":
                 return presentation
             if time.monotonic() + self._poll_interval_s > deadline:
                 raise AppError(

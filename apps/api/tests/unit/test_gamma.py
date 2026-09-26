@@ -90,13 +90,12 @@ async def test_create_then_poll_until_completed(client: GammaClient) -> None:
 
 
 @respx.mock
-async def test_failed_generation_raises_gamma_error(client: GammaClient) -> None:
+async def test_failed_generation_is_returned_with_error(client: GammaClient) -> None:
     respx.get(f"{BASE}/generations/g1").respond(
         200, json={"status": "failed", "error": {"message": "bad input", "statusCode": 400}}
     )
-    with pytest.raises(AppError) as exc:
-        await client.wait_for_completion("g1")
-    assert exc.value.code == ErrorCode.GAMMA_ERROR and "bad input" in exc.value.message
+    result = await client.wait_for_completion("g1")
+    assert (result.status, result.error) == ("failed", "bad input")
 
 
 @respx.mock
