@@ -1,0 +1,474 @@
+{
+  "job_id": "job123",
+  "filename": "sample.csv",
+  "options": {
+    "num_slides": 6,
+    "tone": "executive",
+    "audience": "business stakeholders",
+    "theme_id": null,
+    "export_as": "pdf"
+  },
+  "status": "completed",
+  "created_at": "2026-01-01T12:00:00Z",
+  "updated_at": "2026-01-01T12:00:00Z",
+  "stages": [
+    {
+      "key": "ingest",
+      "label": "Reading file",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:00Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "profile",
+      "label": "Profiling data",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:10Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "analyze",
+      "label": "Generating insights",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:20Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "generate_deck",
+      "label": "Building slide deck",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:30Z",
+      "finished_at": null,
+      "message": null
+    }
+  ],
+  "profile": {
+    "n_rows": 40,
+    "n_cols": 9,
+    "memory_bytes": 10378,
+    "duplicate_rows": 0,
+    "missing_cells_total": 5,
+    "missing_pct_total": 1.39,
+    "sampled": false,
+    "sample_rows": null,
+    "columns": [
+      {
+        "name": "order_id",
+        "inferred_type": "id",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 40,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "order_date",
+        "inferred_type": "datetime",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 40,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": "2025-01-01T00:00:00",
+        "max_date": "2025-10-01T00:00:00"
+      },
+      {
+        "name": "region",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 2,
+        "missing_pct": 5.0,
+        "unique_count": 4,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "South",
+            "count": 13
+          },
+          {
+            "value": "North",
+            "count": 10
+          },
+          {
+            "value": "East",
+            "count": 9
+          },
+          {
+            "value": "West",
+            "count": 6
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "product",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 3,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "Gizmo",
+            "count": 15
+          },
+          {
+            "value": "Gadget",
+            "count": 13
+          },
+          {
+            "value": "Widget",
+            "count": 12
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "units",
+        "inferred_type": "numeric",
+        "dtype": "int64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 29,
+        "mean": 26.625,
+        "std": 13.554614,
+        "min": 4.0,
+        "p25": 17.75,
+        "median": 26.5,
+        "p75": 38.25,
+        "max": 48.0,
+        "skew": -0.276672,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "unit_price",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 3,
+        "mean": 29.24,
+        "std": 17.597713,
+        "min": 9.99,
+        "p25": 9.99,
+        "median": 19.99,
+        "p75": 49.99,
+        "max": 49.99,
+        "skew": 0.268394,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "discount",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 3,
+        "missing_pct": 7.5,
+        "unique_count": 20,
+        "mean": 0.144865,
+        "std": 0.079394,
+        "min": 0.0,
+        "p25": 0.08,
+        "median": 0.17,
+        "p75": 0.21,
+        "max": 0.26,
+        "skew": -0.27344,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "revenue",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 40,
+        "mean": 685.06275,
+        "std": 583.239446,
+        "min": 43.46,
+        "p25": 255.0925,
+        "median": 463.25,
+        "p75": 1089.405,
+        "max": 2155.57,
+        "skew": 0.980226,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "returned",
+        "inferred_type": "boolean",
+        "dtype": "bool",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 2,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "False",
+            "count": 31
+          },
+          {
+            "value": "True",
+            "count": 9
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      }
+    ],
+    "correlation": {
+      "method": "pearson",
+      "columns": [
+        "units",
+        "unit_price",
+        "revenue",
+        "discount"
+      ],
+      "matrix": [
+        [
+          1.0,
+          0.1074,
+          0.594,
+          0.0432
+        ],
+        [
+          0.1074,
+          1.0,
+          0.7825,
+          -0.0225
+        ],
+        [
+          0.594,
+          0.7825,
+          1.0,
+          -0.0773
+        ],
+        [
+          0.0432,
+          -0.0225,
+          -0.0773,
+          1.0
+        ]
+      ]
+    },
+    "top_correlations": [
+      {
+        "a": "unit_price",
+        "b": "revenue",
+        "r": 0.7825
+      },
+      {
+        "a": "units",
+        "b": "revenue",
+        "r": 0.594
+      }
+    ],
+    "warnings": []
+  },
+  "insights": {
+    "executive_summary": "Across 40 orders from January to October 2025, revenue is driven far more by which product is sold than by volume: unit price correlates with revenue at r = 0.78, versus r = 0.59 for units. Gizmo is the most-ordered product and the South the most active region. Discounts average 14.5% and about 22% of orders are returned, both worth investigating before scaling promotions.",
+    "key_findings": [
+      {
+        "title": "Price mix drives revenue more than volume",
+        "detail": "Revenue tracks unit price more closely than units sold, so shifting mix toward higher-priced products likely moves revenue more than pushing volume.",
+        "supporting_stats": [
+          "revenue vs unit_price: r = 0.7825",
+          "revenue vs units: r = 0.594"
+        ]
+      },
+      {
+        "title": "Revenue per order is right-skewed",
+        "detail": "Mean revenue per order (685.06) sits well above the median (463.25), so a few large orders carry a disproportionate share.",
+        "supporting_stats": [
+          "revenue mean: 685.06",
+          "revenue median: 463.25"
+        ]
+      },
+      {
+        "title": "South leads order count",
+        "detail": "South accounts for the most orders among the four regions, followed by North.",
+        "supporting_stats": [
+          "South: 13 orders",
+          "North: 10 orders"
+        ]
+      },
+      {
+        "title": "Returns are material",
+        "detail": "Roughly one in five orders is returned, a meaningful drag on realized revenue.",
+        "supporting_stats": [
+          "returned = True: 9 of 40 orders (22.5%)"
+        ]
+      }
+    ],
+    "hypotheses": [
+      {
+        "statement": "Shifting product mix toward Gizmo increases revenue per order.",
+        "rationale": "Unit price has the strongest correlation with revenue in the profile.",
+        "suggested_test": "A/B test merchandising that features Gizmo and compare revenue per order.",
+        "confidence": "medium"
+      },
+      {
+        "statement": "Higher discounts do not increase units per order.",
+        "rationale": "Discount shows no strong correlation with units (|r| < 0.5).",
+        "suggested_test": "Regress units on discount, controlling for product and region.",
+        "confidence": "low"
+      },
+      {
+        "statement": "Return rates differ by product.",
+        "rationale": "The overall 22.5% return rate is high enough that it probably varies across segments.",
+        "suggested_test": "Chi-square test of returned vs product.",
+        "confidence": "low"
+      }
+    ],
+    "analytical_questions": [
+      {
+        "question": "What margin does each product carry after discounts and returns?",
+        "why_it_matters": "Revenue alone may favor products that are less profitable."
+      },
+      {
+        "question": "Why are two orders missing a region?",
+        "why_it_matters": "Gaps in regional attribution distort territory performance."
+      },
+      {
+        "question": "Is there seasonality in weekly order value?",
+        "why_it_matters": "The data spans nine months, enough to check for early seasonal patterns."
+      }
+    ],
+    "data_quality_notes": [
+      "discount is missing for 3 of 40 orders (7.5%).",
+      "region is missing for 2 of 40 orders (5%).",
+      "With only 40 orders, correlations are directional, not conclusive."
+    ],
+    "recommended_next_steps": [
+      "Join cost data to compute margin per product.",
+      "Break returns down by product and region.",
+      "Collect at least two more quarters of orders before setting pricing strategy."
+    ],
+    "slide_outline": [
+      {
+        "title": "Sales Performance Review: Jan–Oct 2025",
+        "bullets": [
+          "40 orders analyzed",
+          "Prepared for business stakeholders"
+        ]
+      },
+      {
+        "title": "Executive Summary",
+        "bullets": [
+          "Price mix drives revenue (r = 0.78)",
+          "South leads order volume",
+          "22.5% of orders returned"
+        ]
+      },
+      {
+        "title": "What Drives Revenue",
+        "bullets": [
+          "unit_price vs revenue: r = 0.78",
+          "units vs revenue: r = 0.59",
+          "Mean order 685 vs median 463"
+        ]
+      },
+      {
+        "title": "Regional and Product Mix",
+        "bullets": [
+          "South: 13 orders, North: 10",
+          "Gizmo is the most-ordered product"
+        ]
+      },
+      {
+        "title": "Hypotheses to Test",
+        "bullets": [
+          "Gizmo-led mix raises order value",
+          "Discounts don't lift volume",
+          "Returns vary by product"
+        ]
+      },
+      {
+        "title": "Next Steps",
+        "bullets": [
+          "Add cost data for margin",
+          "Break down returns",
+          "Extend the time window"
+        ]
+      }
+    ]
+  },
+  "presentation": {
+    "gamma_generation_id": "gen123",
+    "status": "completed",
+    "gamma_url": "https://gamma.app/docs/gen123",
+    "export_url": "https://export.gamma.app/gen123.pdf",
+    "credits_deducted": 40.0,
+    "error": null,
+    "mock": false
+  },
+  "error": null
+}

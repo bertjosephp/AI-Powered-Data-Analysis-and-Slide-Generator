@@ -1,0 +1,339 @@
+{
+  "job_id": "job123",
+  "filename": "sample.csv",
+  "options": {
+    "num_slides": 6,
+    "tone": "executive",
+    "audience": "business stakeholders",
+    "theme_id": null,
+    "export_as": "pdf"
+  },
+  "status": "running",
+  "created_at": "2026-01-01T12:00:00Z",
+  "updated_at": "2026-01-01T12:00:00Z",
+  "stages": [
+    {
+      "key": "ingest",
+      "label": "Reading file",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:00Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "profile",
+      "label": "Profiling data",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:10Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "analyze",
+      "label": "Generating insights",
+      "status": "running",
+      "started_at": "2026-01-01T12:00:20Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "generate_deck",
+      "label": "Building slide deck",
+      "status": "pending",
+      "started_at": "2026-01-01T12:00:30Z",
+      "finished_at": null,
+      "message": null
+    }
+  ],
+  "profile": {
+    "n_rows": 40,
+    "n_cols": 9,
+    "memory_bytes": 10378,
+    "duplicate_rows": 0,
+    "missing_cells_total": 5,
+    "missing_pct_total": 1.39,
+    "sampled": false,
+    "sample_rows": null,
+    "columns": [
+      {
+        "name": "order_id",
+        "inferred_type": "id",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 40,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "order_date",
+        "inferred_type": "datetime",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 40,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": "2025-01-01T00:00:00",
+        "max_date": "2025-10-01T00:00:00"
+      },
+      {
+        "name": "region",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 2,
+        "missing_pct": 5.0,
+        "unique_count": 4,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "South",
+            "count": 13
+          },
+          {
+            "value": "North",
+            "count": 10
+          },
+          {
+            "value": "East",
+            "count": 9
+          },
+          {
+            "value": "West",
+            "count": 6
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "product",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 3,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "Gizmo",
+            "count": 15
+          },
+          {
+            "value": "Gadget",
+            "count": 13
+          },
+          {
+            "value": "Widget",
+            "count": 12
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "units",
+        "inferred_type": "numeric",
+        "dtype": "int64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 29,
+        "mean": 26.625,
+        "std": 13.554614,
+        "min": 4.0,
+        "p25": 17.75,
+        "median": 26.5,
+        "p75": 38.25,
+        "max": 48.0,
+        "skew": -0.276672,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "unit_price",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 3,
+        "mean": 29.24,
+        "std": 17.597713,
+        "min": 9.99,
+        "p25": 9.99,
+        "median": 19.99,
+        "p75": 49.99,
+        "max": 49.99,
+        "skew": 0.268394,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "discount",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 3,
+        "missing_pct": 7.5,
+        "unique_count": 20,
+        "mean": 0.144865,
+        "std": 0.079394,
+        "min": 0.0,
+        "p25": 0.08,
+        "median": 0.17,
+        "p75": 0.21,
+        "max": 0.26,
+        "skew": -0.27344,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "revenue",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 40,
+        "mean": 685.06275,
+        "std": 583.239446,
+        "min": 43.46,
+        "p25": 255.0925,
+        "median": 463.25,
+        "p75": 1089.405,
+        "max": 2155.57,
+        "skew": 0.980226,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "returned",
+        "inferred_type": "boolean",
+        "dtype": "bool",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 2,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "False",
+            "count": 31
+          },
+          {
+            "value": "True",
+            "count": 9
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      }
+    ],
+    "correlation": {
+      "method": "pearson",
+      "columns": [
+        "units",
+        "unit_price",
+        "revenue",
+        "discount"
+      ],
+      "matrix": [
+        [
+          1.0,
+          0.1074,
+          0.594,
+          0.0432
+        ],
+        [
+          0.1074,
+          1.0,
+          0.7825,
+          -0.0225
+        ],
+        [
+          0.594,
+          0.7825,
+          1.0,
+          -0.0773
+        ],
+        [
+          0.0432,
+          -0.0225,
+          -0.0773,
+          1.0
+        ]
+      ]
+    },
+    "top_correlations": [
+      {
+        "a": "unit_price",
+        "b": "revenue",
+        "r": 0.7825
+      },
+      {
+        "a": "units",
+        "b": "revenue",
+        "r": 0.594
+      }
+    ],
+    "warnings": []
+  },
+  "insights": null,
+  "presentation": null,
+  "error": null
+}
