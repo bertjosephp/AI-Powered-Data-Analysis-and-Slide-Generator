@@ -9,4 +9,5 @@ class AnalysisOptions(BaseModel):
     num_slides: int = Field(default=10, ge=4, le=25)
     tone: Literal["executive", "technical", "casual"] = "executive"
     audience: str = Field(default="business stakeholders", max_length=200)
-    theme: str | None = Field(default=None, max_length=100)
+    theme_id: str | None = Field(default=None, max_length=100)  # a Gamma themeId
+    export_as: Literal["pdf", "pptx"] | None = "pdf"
