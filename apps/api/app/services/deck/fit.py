@@ -19,13 +19,13 @@ from app.schemas.deck import (
 
 log = logging.getLogger(__name__)
 
-TITLE = 60
+TITLE = 56
 SUBTITLE = 120
 HEADLINE = 140
 CARD_TITLE = 40
 CARD_TEXT = 160
 KPI_LABEL = 32
-BULLET = 110
+BULLET = 100
 STATEMENT = 120
 STEP = 110
 MAX_TAKEAWAYS = 3
