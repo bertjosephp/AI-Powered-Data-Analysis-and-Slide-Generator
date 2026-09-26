@@ -95,7 +95,8 @@ def retry_job(job_id: str, background: BackgroundTasks, services: ServicesDep) -
         raise AppError(
             ErrorCode.JOB_NOT_RETRYABLE, f"Only failed jobs can be retried (job is {job.status})."
         )
-    if job.insights is None and services.datasets.get(job_id) is None:
+    # Profiling and exploring need the rows; later stages can run from saved findings.
+    if job.findings is None and services.datasets.get(job_id) is None:
         raise AppError(
             ErrorCode.JOB_NOT_RETRYABLE,
             "The dataset is no longer available for this job. Upload it again.",

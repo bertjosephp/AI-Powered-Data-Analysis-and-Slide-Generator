@@ -8,8 +8,9 @@ from app.config import Settings
 from app.pipeline.orchestrator import Pipeline
 from app.services.deck.pptx_renderer import DeckRenderer, PptxRenderer
 from app.services.deck.theme import Theme
-from app.services.llm.analyst import ClaudeAnalyst, InsightsGenerator
+from app.services.llm.analyst import ClaudeAnalyst
 from app.services.llm.client import make_anthropic_client
+from app.services.llm.context import InsightsGenerator
 from app.services.llm.mock import MockAnalyst
 from app.store.artifact_store import ArtifactStore, InMemoryArtifactStore
 from app.store.dataset_store import DatasetStore, InMemoryDatasetStore

@@ -1,7 +1,8 @@
 """Offline stand-in for ClaudeAnalyst (MOCK_EXTERNAL=true).
 
-Builds plausible insights from the real profile, deterministically, so demos and
-E2E tests show dataset-specific content without an API key.
+Builds the report and deck deterministically from the battery's findings, so
+offline demos and E2E tests still tell a real story, just without Claude's
+follow-up analysis or prose.
 """
 
 import asyncio
@@ -20,193 +21,141 @@ from app.schemas.deck import (
     Takeaway,
     TitleSlide,
 )
+from app.schemas.findings import Finding
 from app.schemas.insights import (
-    AnalyticalQuestion,
+    AnsweredQuestion,
     Hypothesis,
     Insights,
     KeyFinding,
+    OpenQuestion,
 )
-from app.schemas.options import AnalysisOptions
-from app.schemas.profile import DatasetProfile
+from app.services.llm.context import AnalysisContext, AnalystOutput
 
 MOCK_LATENCY_S = 1.0
+MOCK_NOTE = "[Mock analysis] "
 
 
 class MockAnalyst:
     def __init__(self, latency_s: float = MOCK_LATENCY_S) -> None:
         self._latency_s = latency_s
 
-    async def generate(
-        self, profile: DatasetProfile, options: AnalysisOptions, dataset_name: str
-    ) -> Insights:
+    async def generate(self, context: AnalysisContext) -> AnalystOutput:
         await asyncio.sleep(self._latency_s)
-        numeric = [c for c in profile.columns if c.inferred_type == "numeric"]
-        categorical = [c for c in profile.columns if c.inferred_type == "categorical"]
+        return AnalystOutput(insights=_insights(context))
 
-        findings = [
-            KeyFinding(
-                title="Dataset shape",
-                detail=f"{profile.n_rows:,} rows across {profile.n_cols} columns.",
-                supporting_stats=[f"missing cells: {profile.missing_pct_total}%"],
-            )
-        ]
-        findings += [
-            KeyFinding(
-                title=f"{p.a} moves with {p.b}",
-                detail=f"{p.a} and {p.b} are {_direction(p.r)} correlated.",
-                supporting_stats=[f"{p.a} vs {p.b}: r = {p.r}"],
-            )
-            for p in profile.top_correlations[:3]
-        ]
-        hypotheses = [
-            Hypothesis(
-                statement=f"Changes in {p.a} drive changes in {p.b}.",
-                rationale=f"Pearson r = {p.r} in the profile.",
-                suggested_test=f"Run a controlled comparison or regression of {p.b} on {p.a}.",
-                confidence="medium" if abs(p.r) >= 0.7 else "low",
-            )
-            for p in profile.top_correlations[:3]
-        ] or [
-            Hypothesis(
-                statement="No strong linear relationships exist between numeric fields.",
-                rationale="No pair of numeric columns has |r| >= 0.5.",
-                suggested_test="Check for non-linear relationships and segment-level effects.",
-                confidence="low",
-            )
-        ]
-        questions = [
-            AnalyticalQuestion(
-                question=f"How does {n.name} differ across {c.name}?",
-                why_it_matters="Segment differences point to where to focus.",
-            )
-            for n, c in zip(numeric[:3], categorical[:3], strict=False)
-        ] or [
-            AnalyticalQuestion(
-                question="What outcome metric should this data be evaluated against?",
-                why_it_matters="Without a target, findings stay descriptive.",
-            )
-        ]
 
-        slides = _slides(profile, options, dataset_name, findings, hypotheses, questions)
-        return Insights(
-            executive_summary=(
-                f"[Mock analysis] {dataset_name} has {profile.n_rows:,} rows and "
-                f"{profile.n_cols} columns, with {len(profile.top_correlations)} notable "
-                "correlations. Set MOCK_EXTERNAL=false for a real Claude analysis."
-            ),
-            key_findings=findings,
-            hypotheses=hypotheses,
-            analytical_questions=questions,
-            data_quality_notes=profile.warnings or ["No major data quality issues detected."],
-            recommended_next_steps=["Validate the hypotheses above with targeted tests."],
-            slides=slides,
+def _insights(ctx: AnalysisContext) -> Insights:
+    findings = ctx.findings
+    story = [f for f in findings if f.kind != "drivers"]
+    drivers = next((f for f in findings if f.kind == "drivers"), None)
+    target = ctx.roles.targets[0] if ctx.roles.targets else "the outcome"
+    question = ctx.options.question or f"What drives {target}?"
+    lead = story[:3]
+
+    summary = (
+        MOCK_NOTE + " ".join(f.summary for f in lead)
+        if lead
+        else MOCK_NOTE + f"{ctx.dataset_name} has no statistically significant patterns to report."
+    )
+    answer_sources = [f for f in [drivers, *lead[:2]] if f is not None]
+    answered = [
+        AnsweredQuestion(
+            question=question,
+            answer=" ".join(f.summary for f in answer_sources) or "No clear drivers were found.",
+            finding_ids=[f.id for f in answer_sources],
+            confidence="medium" if lead else "low",
         )
-
-
-def _direction(r: float) -> str:
-    return "positively" if r > 0 else "negatively"
+    ]
+    hypotheses = [
+        Hypothesis(
+            statement=f"{f.dimension} influences {f.target}.",
+            rationale=f.summary,
+            test=f"Run a controlled comparison (or A/B test) varying {f.dimension} "
+            f"and measure {f.target}.",
+            finding_ids=[f.id],
+            confidence="medium" if f.effect.strength == "strong" else "low",
+        )
+        for f in story
+        if f.kind in ("segment", "bins") and f.dimension
+    ][:3]
+    return Insights(
+        executive_summary=summary,
+        key_findings=[
+            KeyFinding(title=f.title, detail=f.summary, finding_ids=[f.id]) for f in story[:5]
+        ],
+        questions_answered=answered,
+        open_questions=[
+            OpenQuestion(
+                question=f"Does the {f.dimension} effect on {f.target} hold within each segment?",
+                why_it_matters="Confounding between segments can create or hide an effect.",
+            )
+            for f in story[:2]
+            if f.dimension
+        ],
+        hypotheses=hypotheses,
+        recommended_actions=[f"Investigate: {f.title}." for f in story[:3]],
+        data_quality_notes=list(ctx.profile.warnings[:3]),
+        slides=_slides(ctx, story, hypotheses, target),
+    )
 
 
 def _slides(
-    profile: DatasetProfile,
-    options: AnalysisOptions,
-    dataset_name: str,
-    findings: list[KeyFinding],
-    hypotheses: list[Hypothesis],
-    questions: list[AnalyticalQuestion],
+    ctx: AnalysisContext, story: list[Finding], hypotheses: list[Hypothesis], target: str
 ) -> list[SlideSpec]:
-    """A deck that exercises every layout, trimmed to the requested length."""
-    numeric = next((c for c in profile.columns if c.inferred_type == "numeric"), None)
-    categorical = next((c for c in profile.columns if c.inferred_type == "categorical"), None)
-
-    kpis = [
-        Kpi(label="Rows", metric=MetricRef(metric="rows", column=None, finding_id=None)),
-        Kpi(label="Columns", metric=MetricRef(metric="columns", column=None, finding_id=None)),
-        Kpi(
-            label="Missing cells",
-            metric=MetricRef(metric="missing_cells_pct", column=None, finding_id=None),
-        ),
-    ]
-    if numeric:
-        kpis.append(
-            Kpi(
-                label=f"Median {numeric.name}",
-                metric=MetricRef(metric="median", column=numeric.name, finding_id=None),
-            )
-        )
-
-    middle: list[SlideSpec] = [
-        KpiSlide(layout="kpi_cards", title="The dataset at a glance", kpis=kpis)
-    ]
-    if profile.top_correlations:
-        top = profile.top_correlations[0]
-        middle.append(
-            ChartInsightSlide(
-                layout="chart_insight",
-                title=f"{top.a} and {top.b} move together",
-                bullets=[
-                    f"The strongest pair is {top.a} and {top.b} (r = {top.r}).",
-                    "Treat these as leads to test, not causes.",
-                ],
-                chart=ChartRef(chart="correlations", column=None, finding_id=None),
-            )
-        )
-    if categorical:
-        middle.append(
-            ChartInsightSlide(
-                layout="chart_insight",
-                title=f"How {categorical.name} breaks down",
-                bullets=[f"{categorical.name} has {categorical.unique_count} distinct values."],
-                chart=ChartRef(chart="top_values", column=categorical.name, finding_id=None),
-            )
-        )
-    if numeric:
-        middle.append(
-            ChartInsightSlide(
-                layout="chart_insight",
-                title=f"The spread of {numeric.name}",
-                bullets=[f"Median {numeric.name} is {numeric.median}; the mean is {numeric.mean}."],
-                chart=ChartRef(chart="numeric_summary", column=numeric.name, finding_id=None),
-            )
-        )
-    if profile.missing_cells_total:
-        middle.append(
-            ChartInsightSlide(
-                layout="chart_insight",
-                title="Where the data has gaps",
-                bullets=[f"{profile.missing_pct_total}% of all cells are missing."],
-                chart=ChartRef(chart="missing_values", column=None, finding_id=None),
-            )
-        )
-    middle.append(
-        HypothesesSlide(
-            layout="hypotheses",
-            title="Hypotheses worth testing",
-            items=[
-                HypothesisItem(
-                    statement=h.statement, test=h.suggested_test, confidence=h.confidence
-                )
-                for h in hypotheses[:3]
-            ],
-        )
-    )
-
     first: list[SlideSpec] = [
         TitleSlide(
             layout="title",
-            title=f"What {dataset_name} tells us",
-            subtitle=f"[Mock analysis] Prepared for {options.audience}",
+            title=f"What drives {target}",
+            subtitle=MOCK_NOTE + (ctx.options.question or f"Prepared for {ctx.options.audience}"),
         ),
         ExecutiveSummarySlide(
             layout="executive_summary",
-            headline=findings[0].detail,
-            takeaways=[Takeaway(title=f.title, text=f.detail) for f in (findings * 3)[:3]],
+            headline=story[0].summary
+            if story
+            else f"No significant patterns in {ctx.dataset_name}.",
+            takeaways=[Takeaway(title=f.title, text=f.summary) for f in story[:3]],
         ),
     ]
+    kpis = [
+        Kpi(label=_kpi_label(f), metric=MetricRef(metric="finding", column=None, finding_id=f.id))
+        for f in story[:4]
+    ] or [Kpi(label="Rows", metric=MetricRef(metric="rows", column=None, finding_id=None))]
+    middle: list[SlideSpec] = [
+        KpiSlide(layout="kpi_cards", title="The numbers that matter", kpis=kpis)
+    ]
+    middle += [
+        ChartInsightSlide(
+            layout="chart_insight",
+            title=f.title,
+            bullets=[f.summary, *f.caveats[:1]],
+            chart=ChartRef(chart="finding", column=None, finding_id=f.id),
+        )
+        for f in story
+    ]
+    hypotheses_slide = (
+        HypothesesSlide(
+            layout="hypotheses",
+            title="What to test next",
+            items=[
+                HypothesisItem(statement=h.statement, test=h.test, confidence=h.confidence)
+                for h in hypotheses
+            ],
+        )
+        if hypotheses
+        else None
+    )
     last = NextStepsSlide(
         layout="next_steps",
         title="Recommended next steps",
-        steps=[q.question for q in questions[:3]]
-        + ["Validate the hypotheses with targeted tests."],
+        steps=[f"Act on: {f.title}." for f in story[:3]]
+        or ["Collect more data and re-run the analysis."],
     )
-    return [*first, *middle[: max(options.num_slides - 3, 0)], last]
+    room = max(ctx.options.num_slides - len(first) - 1, 1)
+    if hypotheses_slide is not None and room >= 3:
+        middle = [*middle[: room - 1], hypotheses_slide]
+    return [*first, *middle[:room], last]
+
+
+def _kpi_label(f: Finding) -> str:
+    label = f"{f.target} by {f.dimension}" if f.dimension else f.target
+    return label[:30]

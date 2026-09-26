@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.schemas.deck import ResolvedSlide
 from app.schemas.findings import ColumnRoles, Finding
-from app.schemas.insights import Insights
+from app.schemas.insights import GroundingReport, Insights
 from app.schemas.options import AnalysisOptions
 from app.schemas.presentation import Presentation
 from app.schemas.profile import DatasetProfile
@@ -56,6 +56,7 @@ class JobState(BaseModel):
     roles: ColumnRoles | None = None
     findings: list[Finding] | None = None
     insights: Insights | None = None
+    grounding: GroundingReport | None = None
     deck: list[ResolvedSlide] | None = None  # the slides as rendered, for the web preview
     presentation: Presentation | None = None
     error: JobError | None = None

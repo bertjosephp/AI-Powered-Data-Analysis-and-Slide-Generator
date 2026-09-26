@@ -7,7 +7,7 @@ from app.config import Settings, get_settings
 from app.main import create_app
 from app.services.container import build_services
 from app.services.deck.pptx_renderer import DeckRenderer
-from app.services.llm.analyst import InsightsGenerator
+from app.services.llm.context import InsightsGenerator
 from app.services.llm.mock import MockAnalyst
 
 

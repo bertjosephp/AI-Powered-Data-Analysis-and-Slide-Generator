@@ -18,13 +18,14 @@ from app.errors import AppError, ErrorCode
 from app.schemas.deck import ResolvedSlide
 from app.schemas.job import JobError, JobState, StageKey, utcnow
 from app.schemas.presentation import Presentation
-from app.services.analysis.battery import BatteryResult, run_battery
+from app.services.analysis.battery import BatteryResult, make_frame, run_battery
 from app.services.analysis.roles import resolve_column
 from app.services.deck.fit import fit_slides
 from app.services.deck.pptx_renderer import DeckRenderer
 from app.services.deck.resolve import resolve_slides
 from app.services.eda.profiler import build_profile, sample_frame
-from app.services.llm.analyst import InsightsGenerator
+from app.services.llm.context import AnalysisContext, InsightsGenerator
+from app.services.llm.grounding import check_grounding
 from app.store.artifact_store import ArtifactStore
 from app.store.dataset_store import DatasetStore
 from app.store.job_store import JobStore
@@ -75,9 +76,10 @@ class Pipeline:
 
             if job.insights is None:
                 async with self._stage(job, "analyze"):
-                    job.insights = await self._analyst.generate(
-                        job.profile, job.options, job.filename
-                    )
+                    output = await self._analyst.generate(self._context(job))
+                    job.findings = [*(job.findings or []), *output.follow_ups]
+                    job.insights = output.insights
+                    job.grounding = check_grounding(output.insights, job.profile, job.findings)
 
             async with self._stage(job, "generate_deck"):
                 slides, data = await run_in_threadpool(self._build_deck, job)
@@ -101,6 +103,22 @@ class Pipeline:
                 ErrorCode.DATASET_EXPIRED, "The dataset is no longer in memory. Upload it again."
             )
         return df
+
+    def _context(self, job: JobState) -> AnalysisContext:
+        assert job.profile is not None and job.roles is not None
+        df = self._datasets.get(job.job_id)
+        frame = None
+        if df is not None:  # without the dataset, the analyst works from findings alone
+            sample = sample_frame(df, self._settings.profile_sample_rows)
+            frame = make_frame(sample, job.roles, len(df) if len(sample) < len(df) else None)
+        return AnalysisContext(
+            profile=job.profile,
+            findings=list(job.findings or []),
+            roles=job.roles,
+            options=job.options,
+            dataset_name=job.filename,
+            frame=frame,
+        )
 
     def _explore(self, df: pd.DataFrame, job: JobState) -> BatteryResult:
         assert job.profile is not None

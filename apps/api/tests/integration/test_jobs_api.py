@@ -15,9 +15,7 @@ from pptx import Presentation as PptxFile
 from app.config import Settings
 from app.errors import AppError, ErrorCode
 from app.schemas.deck import ResolvedSlide
-from app.schemas.insights import Insights
-from app.schemas.options import AnalysisOptions
-from app.schemas.profile import DatasetProfile
+from app.services.llm.context import AnalysisContext, AnalystOutput
 from app.services.llm.mock import MockAnalyst
 from tests.conftest import make_client
 
@@ -39,13 +37,11 @@ class CountingAnalyst:
         self.calls = 0
         self.failures = failures
 
-    async def generate(
-        self, profile: DatasetProfile, options: AnalysisOptions, dataset_name: str
-    ) -> Insights:
+    async def generate(self, context: AnalysisContext) -> AnalystOutput:
         self.calls += 1
         if self.calls <= self.failures:
             raise AppError(ErrorCode.LLM_ERROR, "Anthropic rate limit reached. Retry later.")
-        return await MockAnalyst(latency_s=0).generate(profile, options, dataset_name)
+        return await MockAnalyst(latency_s=0).generate(context)
 
 
 class FlakyRenderer:
@@ -88,11 +84,9 @@ def test_full_pipeline_completes(client: TestClient) -> None:
     assert job["profile"]["n_rows"] == 40
     assert len(job["insights"]["slides"]) == 6
     assert [s["layout"] for s in job["deck"]][:3] == ["title", "executive_summary", "kpi_cards"]
-    assert job["deck"][2]["kpis"][0] == {
-        "label": "Rows",
-        "value": "40",
-        "caption": "rows in the dataset",
-    }
+    top = job["findings"][0]
+    assert job["deck"][2]["kpis"][0]["value"] == top["headline"]  # KPIs come from findings
+    assert job["grounding"]["unverified"] == []
     assert job["presentation"]["slide_count"] == 6
     assert job["presentation"]["download_path"] == f"/jobs/{job_id}/deck.pptx"
     assert job["error"] is None
@@ -256,12 +250,23 @@ def test_unknown_target_column_is_rejected(client: TestClient) -> None:
     assert "nope" in res.json()["error"]["message"]
 
 
-def test_retry_needs_the_dataset_until_insights_exist(settings: Settings) -> None:
+def test_retry_after_analysis_failure_works_without_the_dataset(settings: Settings) -> None:
     analyst = CountingAnalyst(failures=1)
     with make_client(settings, analyst=analyst) as client:
         job_id = _upload(client).json()["job_id"]
+        client.app.state.services.datasets._items.clear()  # type: ignore[attr-defined]
+        assert client.post(f"{JOBS}/{job_id}/retry").status_code == 202
+        assert client.get(f"{JOBS}/{job_id}").json()["status"] == "completed"
+
+
+def test_retry_needs_the_dataset_before_findings_exist(settings: Settings) -> None:
+    with make_client(settings) as client:
+        job_id = _upload(client).json()["job_id"]
         services = client.app.state.services  # type: ignore[attr-defined]
-        services.datasets._items.clear()  # simulate the dataset expiring
+        job = services.store.get(job_id)
+        job.status, job.findings = "failed", None  # as if explore had failed
+        services.store.save(job)
+        services.datasets._items.clear()
         res = client.post(f"{JOBS}/{job_id}/retry")
     assert res.status_code == 409
     assert res.json()["error"]["code"] == "JOB_NOT_RETRYABLE"
