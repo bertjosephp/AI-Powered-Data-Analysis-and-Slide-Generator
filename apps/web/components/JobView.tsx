@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, FileSpreadsheet } from "lucide-react";
+import { AlertCircle, FileSpreadsheet, WifiOff } from "lucide-react";
 import Link from "next/link";
 
 import { ColumnTable } from "@/components/dataset/ColumnTable";
@@ -11,6 +11,7 @@ import { ExecutiveSummary } from "@/components/insights/ExecutiveSummary";
 import { HypothesesList } from "@/components/insights/HypothesesList";
 import { NotesList, QuestionsList } from "@/components/insights/QuestionsList";
 import { DeckCard } from "@/components/presentation/DeckCard";
+import { ErrorPanel } from "@/components/progress/ErrorPanel";
 import { PipelineTracker } from "@/components/progress/PipelineTracker";
 import { ApiError } from "@/lib/api/client";
 import type { JobState } from "@/lib/api/types";
@@ -20,7 +21,7 @@ import { cn } from "@/lib/utils";
 type Props = { jobId: string; pollIntervalMs?: number };
 
 export function JobView({ jobId, pollIntervalMs }: Props) {
-  const { data: job, error, isPending } = useJobPolling(jobId, pollIntervalMs);
+  const { data: job, error, isPending, failureCount } = useJobPolling(jobId, pollIntervalMs);
 
   if (isPending) return <JobSkeleton />;
   if (!job) {
@@ -49,14 +50,31 @@ export function JobView({ jobId, pollIntervalMs }: Props) {
   }
 
   const analyzing = job.stages.some((s) => s.key === "analyze" && s.status === "running");
+  const current = job.stages.find((s) => s.status === "running");
 
   return (
     <div className="space-y-8">
+      <p className="sr-only" aria-live="polite">
+        {job.status === "completed"
+          ? "Analysis complete. Your deck is ready."
+          : job.status === "failed"
+            ? "The analysis failed."
+            : current
+              ? `${current.label}…`
+              : "Queued."}
+      </p>
       <div className="space-y-6">
         <JobHeader job={job} />
+        {(error || failureCount > 0) && (
+          <p className="flex items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning">
+            <WifiOff className="size-4 shrink-0" aria-hidden />
+            Lost contact with the server. Showing the last known progress; retrying…
+          </p>
+        )}
         <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
           <PipelineTracker stages={job.stages} />
         </section>
+        <ErrorPanel job={job} />
         <DeckCard job={job} />
       </div>
 
@@ -83,7 +101,7 @@ export function JobView({ jobId, pollIntervalMs }: Props) {
             Dataset profile
           </h2>
           <SummaryCards profile={job.profile} />
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid items-start gap-4 lg:grid-cols-2">
             <MissingValues columns={job.profile.columns} />
             <CorrelationHeatmap correlation={job.profile.correlation} />
           </div>
