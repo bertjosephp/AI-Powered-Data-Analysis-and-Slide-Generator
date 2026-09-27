@@ -4,6 +4,7 @@ import io
 from functools import cache
 from pathlib import Path
 
+import pytest
 from pptx import Presentation
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.util import Pt
@@ -21,9 +22,10 @@ from app.schemas.deck import (
 from app.schemas.findings import Finding
 from app.schemas.profile import DatasetProfile
 from app.services.analysis.battery import run_battery
+from app.services.deck import fit
 from app.services.deck.fit import fit_slides
 from app.services.deck.pptx_renderer import PptxRenderer
-from app.services.deck.resolve import finding_caption, resolve_slides
+from app.services.deck.resolve import chart_caption, finding_caption, resolve_slides
 from app.services.eda.profiler import build_profile
 from app.services.ingestion.loader import load_dataset
 
@@ -132,3 +134,11 @@ def test_finding_bars_emphasize_the_standout() -> None:
     assert all(
         c == DEFAULT_THEME.accent_muted.lstrip("#") for i, c in enumerate(colors) if i != standout
     )
+
+
+@pytest.mark.parametrize("dataset", sorted(p.stem for p in DATA.glob("*.csv")))
+def test_finding_chart_captions_fit_without_clipping(dataset: str) -> None:
+    df = load_dataset((DATA / f"{dataset}.csv").read_bytes(), f"{dataset}.csv", 10**8)
+    findings = run_battery(df, build_profile(df, 200_000)).findings
+    long = [c for f in findings if len(c := chart_caption(f)) > fit.CHART_CAPTION_WITH_NOTE]
+    assert long == []

@@ -20,6 +20,7 @@ from app.services.ingestion.loader import load_dataset
 from app.services.llm.analyst import MAX_TOOL_CALLS, ClaudeAnalyst
 from app.services.llm.context import AnalysisContext
 from app.services.llm.mock import MockAnalyst
+from app.services.llm.shorten import Rewrite, Rewrites
 from app.services.llm.tools import TOOLS, ToolRunner
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
@@ -81,6 +82,7 @@ class FakeMessages:
         self.create_calls: list[dict[str, Any]] = []
         self.parse_calls: list[dict[str, Any]] = []
         self._slides: list[Any] | None = None
+        self.rewrites: list[Any] = []  # outcomes for shorten calls
 
     async def create(self, **kwargs: Any) -> Any:
         self.create_calls.append({**kwargs, "messages": list(kwargs["messages"])})
@@ -92,6 +94,11 @@ class FakeMessages:
     async def parse(self, **kwargs: Any) -> Any:
         self.parse_calls.append({**kwargs, "messages": list(kwargs["messages"])})
         fmt = kwargs["output_format"]
+        if fmt is Rewrites:
+            outcome = self.rewrites.pop(0)
+            if isinstance(outcome, Exception):
+                raise outcome
+            return _report(outcome)
         if fmt is DeckPlan and self._slides is not None:
             slides, self._slides = self._slides, None
             return _report(DeckPlan(slides=slides))
@@ -286,6 +293,37 @@ async def test_slides_are_retried_when_the_deck_is_empty(good_insights: Insights
     out = await ClaudeAnalyst(client, "m").generate(_context(with_frame=False))
     assert out.insights == good_insights  # report from the first, slides from the retry
     assert [c["output_format"] for c in client.messages.parse_calls] == [Report, DeckPlan, DeckPlan]
+
+
+def _with_long_bullet(insights: Insights) -> tuple[Insights, int, str]:
+    """Copy with one chart slide's first bullet made longer than its box."""
+    i = next(n for n, s in enumerate(insights.slides) if s.layout == "chart_insight")
+    long = "Customers on monthly billing churn far more often than annual ones, " * 3
+    slides = [s.model_copy(deep=True) for s in insights.slides]
+    slides[i].bullets[0] = long  # type: ignore[union-attr]
+    return insights.model_copy(update={"slides": slides}), i, long
+
+
+async def test_overlong_slide_text_is_rewritten_shorter(good_insights: Insights) -> None:
+    insights, i, _ = _with_long_bullet(good_insights)
+    client = _client([], [_report(insights)])
+    short = "Monthly payers churn far more than annual ones."
+    client.messages.rewrites = [Rewrites(items=[Rewrite(id=f"slides[{i}].bullets[0]", text=short)])]
+    out = await ClaudeAnalyst(client, "m").generate(_context(with_frame=False))
+
+    assert out.insights.slides[i].bullets[0] == short  # type: ignore[union-attr]
+    shorten = client.messages.parse_calls[-1]
+    assert shorten["output_format"] is Rewrites and "tools" not in shorten
+    assert f"slides[{i}].bullets[0]" in shorten["messages"][0]["content"]
+    assert [c["output_format"] for c in client.messages.parse_calls] == [Report, DeckPlan, Rewrites]
+
+
+async def test_failed_shortening_keeps_the_deck(good_insights: Insights) -> None:
+    insights, i, long = _with_long_bullet(good_insights)
+    client = _client([], [_report(insights)])
+    client.messages.rewrites = [_status_error(anthropic.InternalServerError, 500)]
+    out = await ClaudeAnalyst(client, "m").generate(_context(with_frame=False))
+    assert out.insights.slides[i].bullets[0] == long  # type: ignore[union-attr]
 
 
 async def test_gives_up_with_schema_error(good_insights: Insights) -> None:

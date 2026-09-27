@@ -215,7 +215,7 @@ def finding_chart(finding: Finding) -> ResolvedChart:
     fmt = "number" if src.value_format == "currency" else src.value_format
     return ResolvedChart(
         kind="finding",
-        caption=finding.title,
+        caption=chart_caption(finding),
         categories=src.categories,
         values=src.values,
         value_format=fmt,
@@ -224,6 +224,14 @@ def finding_chart(finding: Finding) -> ResolvedChart:
         reference_label=src.reference_label,
         finding_id=finding.id,
     )
+
+
+def chart_caption(f: Finding) -> str:
+    """What the chart plots, e.g. "readmitted_30d by primary_diagnosis". The slide title
+    already states the takeaway, and the full finding title overflows the caption box."""
+    if f.kind in ("segment", "bins") and f.target and f.dimension:
+        return f"{f.target} by {f.dimension}"
+    return f.title.split(":")[0]
 
 
 def finding_caption(f: Finding) -> str:

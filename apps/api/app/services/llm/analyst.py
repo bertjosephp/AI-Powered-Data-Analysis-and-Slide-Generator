@@ -5,6 +5,8 @@ Two phases over one conversation:
      (at most MAX_TOOL_CALLS, over at most MAX_ROUNDS turns).
   2. Report: two structured-output calls (tool_choice "none"): the written report,
      then the slides. One schema covering both exceeds the API's grammar limit.
+  3. Shorten: if any slide text is longer than its box, one small call rewrites
+     just those strings.
 The full assistant content (including thinking blocks) is appended every turn,
 and the static system prompt and the large first message carry cache breakpoints.
 """
@@ -26,6 +28,13 @@ from app.services.llm.prompts import (
     SYSTEM_PROMPT,
     build_user_prompt,
 )
+from app.services.llm.shorten import (
+    SHORTEN_SYSTEM,
+    Rewrites,
+    apply_rewrites,
+    find_overlong,
+    shorten_prompt,
+)
 from app.services.llm.tools import TOOLS, ToolRunner
 from app.services.llm.usage import Usage
 
@@ -37,6 +46,7 @@ EXPLORE_MAX_TOKENS = 8_000
 MAX_TOOL_CALLS = 8
 MAX_ROUNDS = 4
 REPORT_ATTEMPTS = 2
+SHORTEN_MAX_TOKENS = 2_000
 BUDGET_EXHAUSTED = "Tool budget exhausted. Write the final report from the findings you have."
 
 
@@ -149,7 +159,32 @@ class ClaudeAnalyst:
             tool_args,
             problem=lambda d: None if d.slides else "the deck had no slides",
         )
+        deck = await self._shorten(deck)
         return Insights(**dict(report), slides=deck.slides)
+
+    async def _shorten(self, deck: DeckPlan) -> DeckPlan:
+        """Asks Claude to rewrite slide text that is longer than its box. Best effort:
+        on any failure the deck is kept, and the fit step clips what is still too long."""
+        overlong = find_overlong(deck)
+        if not overlong:
+            return deck
+        try:
+            response = await self._call(
+                self._client.messages.parse,
+                model=self._model,
+                max_tokens=SHORTEN_MAX_TOKENS,
+                system=SHORTEN_SYSTEM,
+                messages=[{"role": "user", "content": shorten_prompt(overlong)}],
+                output_format=Rewrites,
+            )
+        except (AppError, ValidationError) as e:
+            log.warning("Shortening skipped: %s", e)
+            return deck
+        rewrites: Rewrites | None = response.parsed_output
+        if rewrites is None:
+            return deck
+        log.info("Shortened %d overlong slide texts", len(overlong))
+        return apply_rewrites(deck, overlong, rewrites)
 
     async def _structured(
         self,
