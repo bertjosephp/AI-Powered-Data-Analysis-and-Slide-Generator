@@ -8,7 +8,7 @@
 
 | Method | Path | Success | Purpose |
 |---|---|---|---|
-| GET | `/health` | 200 | Liveness, plus whether keys are configured and mock mode is on |
+| GET | `/health` | 200 | Liveness, whether keys are configured and mock mode is on, the deployed `commit`, and the caller's `demo` limits (null in mock mode) |
 | POST | `/jobs` | 202 `JobCreated` | Upload a dataset and start the pipeline |
 | GET | `/jobs/{job_id}` | 200 `JobState` | Poll progress and results |
 | GET | `/jobs/{job_id}/profile` | 200 `DatasetProfile` | The profile alone (409 until it's ready) |

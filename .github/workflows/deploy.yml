@@ -1,0 +1,70 @@
+name: Deploy
+
+# Production deploys run only after CI passes on main (or by hand).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API → Render
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: production-api
+      url: ${{ vars.API_URL }}/api/v1/health
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Trigger the Render deploy hook
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" > /dev/null
+      - name: Wait until the new commit is live
+        # A free instance may also need to wake up; allow up to 15 minutes.
+        run: |
+          for i in $(seq 1 90); do
+            body=$(curl -fsS --max-time 20 "${{ vars.API_URL }}/api/v1/health" || true)
+            if echo "$body" | grep -q "\"commit\":\"$SHA\""; then
+              echo "Live: $body"; exit 0
+            fi
+            sleep 10
+          done
+          echo "The API did not report commit $SHA in time. Last response: $body"
+          exit 1
+
+  web:
+    name: Web → Vercel
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: production-web
+      url: ${{ vars.WEB_URL }}
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # The Vercel project's root directory is apps/web, so the CLI runs from the repo root.
+      - run: npx vercel@latest pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - run: npx vercel@latest build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - run: npx vercel@latest deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      # The production domain, not the per-deploy URL, which deployment protection may hide.
+      - name: Smoke check
+        run: curl -fsS -o /dev/null -w "HTTP %{http_code}\n" "${{ vars.WEB_URL }}"

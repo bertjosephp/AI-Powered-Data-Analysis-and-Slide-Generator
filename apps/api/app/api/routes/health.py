@@ -21,6 +21,7 @@ class HealthResponse(BaseModel):
     status: str
     anthropic_configured: bool
     mock_external: bool
+    commit: str | None = None
     demo: DemoStatus | None = None
 
 
@@ -44,5 +45,6 @@ def health(
         status="ok",
         anthropic_configured=bool(settings.anthropic_api_key),
         mock_external=settings.mock_external,
+        commit=settings.git_commit,
         demo=demo,
     )
