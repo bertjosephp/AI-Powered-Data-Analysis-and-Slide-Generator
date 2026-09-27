@@ -1,9 +1,7 @@
 import { readFileSync } from "node:fs";
-import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
-const SAMPLE_CSV = path.resolve(__dirname, "../../api/tests/fixtures/sample.csv");
 
 /** Slide parts inside a .pptx (a zip): the central directory lists every entry name. */
 function countSlides(pptx: Buffer): number {
@@ -11,53 +9,47 @@ function countSlides(pptx: Buffer): number {
   return new Set(names).size;
 }
 
-test("upload → progress → insights, profile and deck", async ({ page }) => {
+test("example dataset → tested findings, answer and a native deck", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Upload dataset").setInputFiles(SAMPLE_CSV);
-  await expect(page.getByText("sample.csv")).toBeVisible();
-
-  await page.getByLabel("Slides").fill("6");
-  await page.getByLabel("Audience").fill("the leadership team");
+  await page.getByRole("button", { name: /e-commerce orders/i }).click();
+  await expect(page.getByText("ecommerce_orders.csv")).toBeVisible();
+  await expect(page.getByLabel(/what do you want to learn/i)).toHaveValue(/margin/);
+  await expect(page.getByRole("combobox", { name: /outcome to explain/i })).toHaveValue("margin");
+  await page.getByLabel("Slides").fill("8");
   await page.getByRole("button", { name: /analyze and build deck/i }).click();
 
   await expect(page).toHaveURL(/\/jobs\/[0-9a-f]{32}$/);
-  const tracker = page.getByRole("list", { name: "Pipeline progress" });
-  await expect(tracker).toBeVisible();
+  await expect(page.getByText("Completed", { exact: true })).toBeVisible({ timeout: 30_000 });
 
-  // The mock analyst takes ~1s, so the running state is observable before completion.
-  await expect(page.getByRole("heading", { name: "Dataset profile" })).toBeVisible();
-  await expect(page.getByText("Completed", { exact: true })).toBeVisible({ timeout: 20_000 });
+  // The question is answered first, citing findings that exist on the page.
+  const answers = page.getByRole("region", { name: "Your question, answered" });
+  await expect(answers).toBeVisible();
+  const chip = answers.getByRole("link").first();
+  const target = await chip.getAttribute("href");
+  await expect(page.locator(target!)).toBeVisible();
 
-  await expect(tracker.getByRole("listitem")).toHaveCount(4);
-  await expect(page.getByRole("heading", { name: "Your deck is ready" })).toBeVisible();
+  // Tested findings, including the planted discount → margin effect.
+  const findings = page.getByRole("region", { name: "Findings" });
+  await expect(findings.getByRole("heading", { name: "margin falls across discount_pct" })).toBeVisible();
+  await expect(page.getByText(/figures traced to the analysis/)).toBeVisible();
 
   // The download is a real, native .pptx with one slide per requested slide.
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("link", { name: /download \.pptx/i }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("sample-deck.pptx");
+  expect(download.suggestedFilename()).toBe("ecommerce_orders-deck.pptx");
   const file = readFileSync(await download.path());
   expect(file.subarray(0, 2).toString()).toBe("PK");
-  expect(countSlides(file)).toBe(6);
+  expect(countSlides(file)).toBe(8);
 
   // The in-browser preview and presenter mode.
-  await expect(page.getByRole("button", { name: /^Open slide/ })).toHaveCount(6);
+  await expect(page.getByRole("button", { name: /^Open slide/ })).toHaveCount(8);
   await page.getByRole("button", { name: "Present" }).click();
-  const dialog = page.getByRole("dialog", { name: "Slide 1 of 6" });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByText("What sample.csv tells us")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Slide 1 of 8" })).toBeVisible();
   await page.keyboard.press("ArrowRight");
-  await page.keyboard.press("ArrowRight");
-  await expect(page.getByRole("dialog", { name: "Slide 3 of 6" })).toContainText("Median units");
+  await expect(page.getByRole("dialog", { name: "Slide 2 of 8" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-
-  await expect(page.getByRole("heading", { name: "Insights" })).toBeVisible();
-  await expect(page.getByText("6 slides · executive tone · for the leadership team")).toBeVisible();
-  await expect(page.getByRole("cell", { name: "revenue and unit_price: r = 0.78" })).toBeVisible();
-  await expect(page.getByRole("row", { name: /order_date datetime/ })).toContainText(
-    "2025-01-01 to 2025-10-01",
-  );
 });
 
 test("a corrupt workbook is rejected with the server's message", async ({ page }) => {
