@@ -2027,6 +2027,9 @@
     "checked": 62,
     "unverified": []
   },
+  "analyst": "mock",
+  "analyst_note": null,
+  "usage": null,
   "deck": null,
   "presentation": null,
   "error": {

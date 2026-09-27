@@ -42,6 +42,17 @@ class JobError(BaseModel):
     message: str
 
 
+class JobUsage(BaseModel):
+    """Claude usage for this job's analysis (absent for the offline analyst)."""
+
+    calls: int
+    input_tokens: int
+    output_tokens: int
+    cache_read_tokens: int
+    cache_write_tokens: int
+    cost_usd: float
+
+
 class JobState(BaseModel):
     job_id: str
     filename: str
@@ -57,6 +68,10 @@ class JobState(BaseModel):
     findings: list[Finding] | None = None
     insights: Insights | None = None
     grounding: GroundingReport | None = None
+    # Which analyst wrote the story, and why it fell back to the offline one if it did.
+    analyst: Literal["claude", "mock"] = "mock"
+    analyst_note: str | None = None
+    usage: JobUsage | None = None
     deck: list[ResolvedSlide] | None = None  # the slides as rendered, for the web preview
     presentation: Presentation | None = None
     error: JobError | None = None

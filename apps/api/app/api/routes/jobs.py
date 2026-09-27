@@ -3,7 +3,7 @@ from typing import Annotated
 from urllib.parse import quote
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Request, Response, UploadFile
 from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
 
@@ -26,6 +26,7 @@ PPTX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.
 
 @router.post("", status_code=202, response_model=JobCreated)
 async def create_job(
+    request: Request,
     background: BackgroundTasks,
     services: ServicesDep,
     settings: SettingsDep,
@@ -49,6 +50,7 @@ async def create_job(
     job = JobState(job_id=uuid4().hex, filename=filename, options=opts)
     ingest = job.stage("ingest")
     ingest.status, ingest.started_at, ingest.finished_at = "done", utcnow(), utcnow()
+    services.pipeline.admit(job, client_id(request))
     services.store.create(job)
     services.datasets.put(job.job_id, df)
     background.add_task(services.pipeline.run, job.job_id)
@@ -89,7 +91,9 @@ def download_deck(job_id: str, services: ServicesDep) -> Response:
 
 
 @router.post("/{job_id}/retry", status_code=202, response_model=JobCreated)
-def retry_job(job_id: str, background: BackgroundTasks, services: ServicesDep) -> JobCreated:
+def retry_job(
+    job_id: str, request: Request, background: BackgroundTasks, services: ServicesDep
+) -> JobCreated:
     job = _get_or_404(services, job_id)
     if job.status != "failed":
         raise AppError(
@@ -105,9 +109,19 @@ def retry_job(job_id: str, background: BackgroundTasks, services: ServicesDep) -
         if stage.status == "failed":
             stage.status, stage.message = "pending", None
     job.status, job.error = "queued", None
+    if job.insights is None and job.analyst == "claude":
+        services.pipeline.admit(job, client_id(request))  # re-check the demo limits
     services.store.save(job)
     background.add_task(services.pipeline.run, job.job_id)
     return JobCreated(job_id=job.job_id, status=job.status)
+
+
+def client_id(request: Request) -> str:
+    """The visitor's IP. Behind Render's proxy the first X-Forwarded-For hop is the client."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 def _get_or_404(services: Services, job_id: str) -> JobState:

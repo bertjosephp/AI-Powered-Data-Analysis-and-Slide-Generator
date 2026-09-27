@@ -24,6 +24,15 @@ class Settings(BaseSettings):
 
     mock_external: bool = False
 
+    # Claude pricing for cost accounting (USD per million tokens; defaults: claude-sonnet-5).
+    llm_input_usd_per_mtok: float = Field(default=2.0, ge=0)
+    llm_output_usd_per_mtok: float = Field(default=10.0, ge=0)
+
+    # Public-demo protection. When a limit is hit, runs fall back to the mock analyst.
+    demo_runs_per_hour: int = Field(default=3, ge=0)
+    daily_budget_usd: float = Field(default=3.0, ge=0)
+    max_concurrent_analyses: int = Field(default=2, ge=1)
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, v: object) -> object:

@@ -20,6 +20,7 @@ from app.schemas.insights import Insights
 from app.services.llm.context import AnalysisContext, AnalystOutput
 from app.services.llm.prompts import FINAL_INSTRUCTION, SYSTEM_PROMPT, build_user_prompt
 from app.services.llm.tools import TOOLS, ToolRunner
+from app.services.llm.usage import Usage
 
 log = logging.getLogger(__name__)
 
@@ -36,8 +37,10 @@ class ClaudeAnalyst:
         # `client` is an AsyncAnthropic; typed loosely so tests can pass a fake.
         self._client = client
         self._model = model
+        self._usage = Usage()
 
     async def generate(self, context: AnalysisContext) -> AnalystOutput:
+        self._usage = Usage()
         system = [{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}]
         messages: list[dict[str, Any]] = [
             {
@@ -59,7 +62,10 @@ class ClaudeAnalyst:
         calls = await self._explore(system, messages, runner) if runner else 0
         insights = await self._report(system, messages, tools_enabled=runner is not None)
         return AnalystOutput(
-            insights=insights, follow_ups=runner.findings if runner else [], tool_calls=calls
+            insights=insights,
+            follow_ups=runner.findings if runner else [],
+            tool_calls=calls,
+            usage=self._usage,
         )
 
     async def _explore(
@@ -157,10 +163,11 @@ class ClaudeAnalyst:
         if response.stop_reason == "refusal":
             raise AppError(ErrorCode.LLM_ERROR, "The model declined to analyze this dataset.")
 
-    @staticmethod
-    async def _call(method: Any, **kwargs: Any) -> Any:
+    async def _call(self, method: Any, **kwargs: Any) -> Any:
         try:
-            return await method(**kwargs)
+            response = await method(**kwargs)
+            self._usage.add(getattr(response, "usage", None))
+            return response
         except anthropic.AuthenticationError as e:
             raise AppError(ErrorCode.LLM_ERROR, "The Anthropic API key was rejected.") from e
         except anthropic.RateLimitError as e:

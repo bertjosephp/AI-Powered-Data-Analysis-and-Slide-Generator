@@ -887,6 +887,9 @@
   "findings": null,
   "insights": null,
   "grounding": null,
+  "analyst": "mock",
+  "analyst_note": null,
+  "usage": null,
   "deck": null,
   "presentation": null,
   "error": null

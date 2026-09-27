@@ -11,6 +11,7 @@ from app.services.deck.theme import Theme
 from app.services.llm.analyst import ClaudeAnalyst
 from app.services.llm.client import make_anthropic_client
 from app.services.llm.context import InsightsGenerator
+from app.services.llm.guard import DemoGuard
 from app.services.llm.mock import MockAnalyst
 from app.store.artifact_store import ArtifactStore, InMemoryArtifactStore
 from app.store.dataset_store import DatasetStore, InMemoryDatasetStore
@@ -23,19 +24,33 @@ class Services:
     artifacts: ArtifactStore
     datasets: DatasetStore
     pipeline: Pipeline
+    guard: DemoGuard | None
 
 
 def build_services(
     settings: Settings,
     analyst: InsightsGenerator | None = None,
     renderer: DeckRenderer | None = None,
+    fallback: InsightsGenerator | None = None,
 ) -> Services:
+    """`analyst` overrides the primary analyst (Claude unless MOCK_EXTERNAL); `fallback`
+    overrides the offline analyst used when the demo guard says no."""
+    uses_claude = not settings.mock_external
     if analyst is None:
         analyst = (
-            MockAnalyst()
-            if settings.mock_external
-            else ClaudeAnalyst(make_anthropic_client(settings), settings.llm_model)
+            ClaudeAnalyst(make_anthropic_client(settings), settings.llm_model)
+            if uses_claude
+            else MockAnalyst()
         )
+    guard = (
+        DemoGuard(
+            settings.demo_runs_per_hour,
+            settings.daily_budget_usd,
+            settings.max_concurrent_analyses,
+        )
+        if uses_claude
+        else None
+    )
     renderer = renderer or PptxRenderer(Theme(font=settings.deck_font))
     store = InMemoryJobStore(settings.job_ttl_s)
     artifacts = InMemoryArtifactStore(settings.job_ttl_s)
@@ -44,7 +59,18 @@ def build_services(
         store=store,
         artifacts=artifacts,
         datasets=datasets,
-        pipeline=Pipeline(store, analyst, renderer, artifacts, datasets, settings),
+        pipeline=Pipeline(
+            store,
+            analyst,
+            renderer,
+            artifacts,
+            datasets,
+            settings,
+            fallback=fallback or MockAnalyst(),
+            guard=guard,
+            uses_claude=uses_claude,
+        ),
+        guard=guard,
     )
 
 

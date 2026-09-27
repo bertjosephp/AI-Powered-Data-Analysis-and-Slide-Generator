@@ -16,7 +16,7 @@ from starlette.concurrency import run_in_threadpool
 from app.config import Settings
 from app.errors import AppError, ErrorCode
 from app.schemas.deck import ResolvedSlide
-from app.schemas.job import JobError, JobState, StageKey, utcnow
+from app.schemas.job import JobError, JobState, JobUsage, StageKey, utcnow
 from app.schemas.presentation import Presentation
 from app.services.analysis.battery import BatteryResult, make_frame, run_battery
 from app.services.analysis.roles import resolve_column
@@ -26,6 +26,8 @@ from app.services.deck.resolve import resolve_slides
 from app.services.eda.profiler import build_profile, sample_frame
 from app.services.llm.context import AnalysisContext, InsightsGenerator
 from app.services.llm.grounding import check_grounding
+from app.services.llm.guard import DemoGuard
+from app.services.llm.usage import Usage
 from app.store.artifact_store import ArtifactStore
 from app.store.dataset_store import DatasetStore
 from app.store.job_store import JobStore
@@ -46,15 +48,47 @@ class Pipeline:
         artifacts: ArtifactStore,
         datasets: DatasetStore,
         settings: Settings,
+        *,
+        fallback: InsightsGenerator | None = None,
+        guard: DemoGuard | None = None,
+        uses_claude: bool = False,
     ) -> None:
         self._store = store
         self._datasets = datasets
         self._analyst = analyst
+        self._fallback = fallback or analyst
+        self._guard = guard
+        self._uses_claude = uses_claude
+        self._reserved: set[str] = set()
         self._renderer = renderer
         self._artifacts = artifacts
         self._settings = settings
 
+    def admit(self, job: JobState, client_id: str) -> None:
+        """Choose Claude or the offline analyst for this job, reserving a demo slot."""
+        if not self._uses_claude:
+            job.analyst, job.analyst_note = "mock", None
+            return
+        if self._guard is None:
+            job.analyst, job.analyst_note = "claude", None
+            return
+        decision = self._guard.decide(client_id)
+        job.analyst = "claude" if decision.use_claude else "mock"
+        job.analyst_note = decision.note
+        if decision.use_claude:
+            self._reserved.add(job.job_id)
+
     async def run(self, job_id: str) -> None:
+        try:
+            await self._run(job_id)
+        finally:
+            if job_id in self._reserved and self._guard is not None:
+                self._reserved.discard(job_id)
+                job = self._store.get(job_id)
+                cost = job.usage.cost_usd if job and job.usage else 0.0
+                self._guard.finish(cost)
+
+    async def _run(self, job_id: str) -> None:
         job = self._store.get(job_id)
         if job is None:
             log.warning("Job %s vanished before it ran", job_id)
@@ -76,7 +110,20 @@ class Pipeline:
 
             if job.insights is None:
                 async with self._stage(job, "analyze"):
-                    output = await self._analyst.generate(self._context(job))
+                    # In mock mode the primary analyst *is* the offline one; otherwise the
+                    # fallback serves runs the demo guard didn't admit to Claude.
+                    use_primary = job.analyst == "claude" or not self._uses_claude
+                    analyst = self._analyst if use_primary else self._fallback
+                    try:
+                        output = await analyst.generate(self._context(job))
+                    except Exception:
+                        # Charge whatever the failed attempt spent before re-raising.
+                        partial = getattr(analyst, "_usage", None)
+                        if partial is not None:
+                            job.usage = self._job_usage(partial)
+                        raise
+                    if output.usage is not None:
+                        job.usage = self._job_usage(output.usage)
                     job.findings = [*(job.findings or []), *output.follow_ups]
                     job.insights = output.insights
                     job.grounding = check_grounding(output.insights, job.profile, job.findings)
@@ -103,6 +150,19 @@ class Pipeline:
                 ErrorCode.DATASET_EXPIRED, "The dataset is no longer in memory. Upload it again."
             )
         return df
+
+    def _job_usage(self, usage: Usage) -> JobUsage:
+        cost = usage.cost_usd(
+            self._settings.llm_input_usd_per_mtok, self._settings.llm_output_usd_per_mtok
+        )
+        return JobUsage(
+            calls=usage.calls,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            cache_read_tokens=usage.cache_read_tokens,
+            cache_write_tokens=usage.cache_write_tokens,
+            cost_usd=round(cost, 5),
+        )
 
     def _context(self, job: JobState) -> AnalysisContext:
         assert job.profile is not None and job.roles is not None

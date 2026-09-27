@@ -20,11 +20,13 @@ def make_client(
     settings: Settings,
     analyst: InsightsGenerator | None = None,
     renderer: DeckRenderer | None = None,
+    fallback: InsightsGenerator | None = None,
 ) -> TestClient:
     services = build_services(
         settings,
         analyst=analyst or MockAnalyst(latency_s=0),
         renderer=renderer,
+        fallback=fallback,
     )
     app = create_app(settings, services)
     app.dependency_overrides[get_settings] = lambda: settings

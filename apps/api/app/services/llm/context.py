@@ -6,6 +6,7 @@ from app.schemas.insights import Insights
 from app.schemas.options import AnalysisOptions
 from app.schemas.profile import DatasetProfile
 from app.services.analysis.analyses import Frame
+from app.services.llm.usage import Usage
 
 
 @dataclass
@@ -26,6 +27,7 @@ class AnalystOutput:
     insights: Insights
     follow_ups: list[Finding] = field(default_factory=list)
     tool_calls: int = 0
+    usage: Usage | None = None  # None for the mock analyst
 
 
 class InsightsGenerator(Protocol):

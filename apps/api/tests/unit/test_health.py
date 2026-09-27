@@ -10,6 +10,7 @@ def test_health_reports_ok_and_config(client: TestClient) -> None:
         "status": "ok",
         "anthropic_configured": False,
         "mock_external": True,
+        "demo": None,  # no demo guard in mock mode
     }
 
 
