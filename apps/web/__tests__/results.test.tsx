@@ -151,6 +151,9 @@ describe("JobView results", () => {
 
     expect(screen.getByText("Your deck is ready")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Slides" })).toBeInTheDocument();
-    expect(screen.getByText(/outcome:/)).toHaveTextContent("returned");
+    expect(screen.getByText("Outcome").nextElementSibling).toHaveTextContent("returned");
+    expect(screen.getByRole("navigation", { name: "On this page" })).toHaveTextContent(
+      /Your answer.*Slides.*Findings.*Insights.*Dataset/,
+    );
   });
 });

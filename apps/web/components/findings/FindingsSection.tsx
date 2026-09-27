@@ -1,4 +1,9 @@
+"use client";
+
 import { Info, Search } from "lucide-react";
+import { useState } from "react";
+
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
 import type { Finding } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
@@ -13,40 +18,57 @@ const STRENGTH: Record<Finding["effect"]["strength"], { label: string; className
   negligible: { label: "Negligible", className: "bg-surface-muted text-muted" },
 };
 
+const INITIAL_VISIBLE = 6;
+
 export function FindingsSection({ findings }: { findings: Finding[] }) {
-  if (findings.length === 0) {
-    return (
-      <section aria-labelledby="findings-heading" className="space-y-2">
-        <h2 id="findings-heading" className="text-lg font-semibold tracking-tight">
-          Findings
-        </h2>
-        <p className="text-sm text-muted">
-          No statistically significant patterns were found. Try a larger dataset or set the
-          outcome column explicitly.
-        </p>
-      </section>
-    );
-  }
+  const [showAll, setShowAll] = useState(false);
   const followUps = findings.filter((f) => f.source === "follow_up").length;
+  const header = (
+    <SectionHeader
+      id="findings-heading"
+      eyebrow="Evidence"
+      title="Findings"
+      description={
+        findings.length === 0
+          ? "No statistically significant patterns were found. Try a larger dataset or set the outcome column explicitly."
+          : `Tested patterns ranked by effect size and significance${
+              followUps > 0
+                ? `, including ${followUps} follow-up ${followUps === 1 ? "analysis" : "analyses"} by Claude`
+                : ""
+            }. Significance is FDR-adjusted across every test run.`
+      }
+    />
+  );
+  if (findings.length === 0) {
+    return <section aria-labelledby="findings-heading">{header}</section>;
+  }
+  // A citation (#finding-F12) must always resolve, so cited cards stay rendered.
+  const visible = showAll ? findings : findings.slice(0, INITIAL_VISIBLE);
+  const hidden = findings.slice(visible.length);
   return (
-    <section aria-labelledby="findings-heading" className="space-y-4">
-      <div>
-        <h2 id="findings-heading" className="text-lg font-semibold tracking-tight">
-          Findings
-        </h2>
-        <p className="text-sm text-muted">
-          Tested patterns ranked by effect size and significance
-          {followUps > 0 && `, including ${followUps} follow-up ${followUps === 1 ? "analysis" : "analyses"} by Claude`}
-          . Significance is FDR-adjusted across every test run.
-        </p>
-      </div>
-      <ol className="grid gap-4 lg:grid-cols-2">
-        {findings.map((f) => (
-          <li key={f.id} id={`finding-${f.id}`} className="scroll-mt-20">
+    <section aria-labelledby="findings-heading">
+      {header}
+      <ol className="grid gap-4 xl:grid-cols-2">
+        {visible.map((f) => (
+          <li key={f.id} id={`finding-${f.id}`} className="scroll-mt-24">
+            <FindingCard finding={f} />
+          </li>
+        ))}
+        {hidden.map((f) => (
+          <li key={f.id} id={`finding-${f.id}`} className="hidden scroll-mt-24 target:block">
             <FindingCard finding={f} />
           </li>
         ))}
       </ol>
+      {hidden.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="mt-4 w-full rounded-xl border border-dashed border-border py-3 text-sm font-medium text-muted transition hover:border-accent/40 hover:text-foreground"
+        >
+          Show all {findings.length} findings
+        </button>
+      )}
     </section>
   );
 }
@@ -55,7 +77,7 @@ export function FindingCard({ finding: f }: { finding: Finding }) {
   const strength = STRENGTH[f.effect.strength];
   const p = f.q_value ?? f.p_value;
   return (
-    <article className="h-full min-w-0 rounded-2xl border border-border bg-surface p-5 target:ring-2 target:ring-accent">
+    <article className="h-full min-w-0 rounded-2xl border border-border bg-surface p-5 shadow-card">
       <header className="flex flex-wrap items-start gap-2">
         <span className="rounded-md bg-surface-muted px-1.5 py-0.5 font-mono text-xs text-muted">{f.id}</span>
         <h3 className="min-w-0 flex-1 font-medium">{f.title}</h3>

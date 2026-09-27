@@ -1,7 +1,16 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertCircle, ArrowRight, Database, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  Database,
+  HeartPulse,
+  Loader2,
+  Repeat,
+  ShoppingCart,
+  Users,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -13,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { FileDropzone } from "./FileDropzone";
 
 const fieldClass =
-  "mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20";
+  "mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-normal shadow-xs transition placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15";
 
 export function UploadForm() {
   const router = useRouter();
@@ -73,126 +82,149 @@ export function UploadForm() {
 
   return (
     <form
-      className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
+      className="rounded-3xl border border-border bg-surface p-5 shadow-card sm:p-7"
       onSubmit={(e) => {
         e.preventDefault();
         if (file) mutation.mutate({ file, options });
       }}
     >
-      <FileDropzone
-        file={file}
-        disabled={busy}
-        onFileChange={(f) => void chooseFile(f)}
-        onReject={(message) => {
-          setFile(null);
-          setColumns(null);
-          setClientError(message);
-        }}
-      />
-
-      {samples.data && samples.data.length > 0 && (
-        <div className="mt-4">
-          <p className="text-sm text-muted">Or try an example dataset:</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {samples.data.map((sample) => (
-              <button
-                key={sample.name}
-                type="button"
-                disabled={busy || loadSample.isPending}
-                onClick={() => loadSample.mutate(sample)}
-                title={`${sample.description} (${sample.rows.toLocaleString("en-US")} rows × ${sample.columns} columns)`}
-                aria-pressed={activeSample === sample.name}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition disabled:opacity-50",
-                  activeSample === sample.name
-                    ? "border-accent bg-accent-soft text-accent"
-                    : "border-border hover:border-accent/50 hover:bg-accent-soft/50",
-                )}
-              >
-                <Database className="size-3.5" aria-hidden />
-                {sample.title}
-              </button>
-            ))}
+      <Step n={1} title="Choose your data">
+        <FileDropzone
+          file={file}
+          disabled={busy}
+          onFileChange={(f) => void chooseFile(f)}
+          onReject={(message) => {
+            setFile(null);
+            setColumns(null);
+            setClientError(message);
+          }}
+        />
+        {samples.data && samples.data.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs font-medium tracking-wide text-muted uppercase">
+              Or start from an example
+            </p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {samples.data.map((sample) => {
+                const Icon = SAMPLE_ICONS[sample.name] ?? Database;
+                const active = activeSample === sample.name;
+                return (
+                  <button
+                    key={sample.name}
+                    type="button"
+                    disabled={busy || loadSample.isPending}
+                    onClick={() => loadSample.mutate(sample)}
+                    title={sample.description}
+                    aria-pressed={active}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl border p-3 text-left transition disabled:opacity-50",
+                      active
+                        ? "border-accent bg-accent-soft"
+                        : "border-border hover:border-accent/40 hover:bg-surface-muted",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "grid size-9 shrink-0 place-items-center rounded-lg",
+                        active ? "bg-accent text-accent-foreground" : "bg-surface-muted text-accent",
+                      )}
+                    >
+                      <Icon className="size-4" aria-hidden />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium">{sample.title}</span>
+                      <span className="block text-xs text-muted">
+                        {sample.rows.toLocaleString("en-US")} rows × {sample.columns} columns
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Step>
 
-      <fieldset className="mt-6 grid gap-4" disabled={busy}>
-        <legend className="mb-3 text-sm font-medium">What should the analysis focus on?</legend>
-        <label className="text-sm text-muted">
-          What do you want to learn? <span className="text-xs">(optional)</span>
-          <textarea
-            className={cn(fieldClass, "min-h-20 resize-y")}
-            value={options.question ?? ""}
-            maxLength={300}
-            placeholder="e.g. Why are customers churning, and what are the warning signs?"
-            onChange={(e) => update("question", e.target.value || null)}
-          />
-        </label>
-        <label className="text-sm text-muted">
-          Outcome to explain <span className="text-xs">(optional)</span>
-          {columns ? (
-            <select
-              className={fieldClass}
-              value={options.target_column ?? ""}
-              onChange={(e) => update("target_column", e.target.value || null)}
-            >
-              <option value="">Detect automatically</option>
-              {columns.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          ) : (
+      <Step n={2} title="Focus the analysis" hint="Optional">
+        <fieldset className="grid gap-4" disabled={busy}>
+          <legend className="sr-only">What should the analysis focus on?</legend>
+          <label className="text-sm font-medium">
+            What do you want to learn?
+            <textarea
+              className={cn(fieldClass, "min-h-20 resize-y")}
+              value={options.question ?? ""}
+              maxLength={300}
+              placeholder="e.g. Why are customers churning, and what are the warning signs?"
+              onChange={(e) => update("question", e.target.value || null)}
+            />
+          </label>
+          <label className="text-sm font-medium">
+            Outcome to explain
+            {columns ? (
+              <select
+                className={fieldClass}
+                value={options.target_column ?? ""}
+                onChange={(e) => update("target_column", e.target.value || null)}
+              >
+                <option value="">Detect automatically</option>
+                {columns.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className={fieldClass}
+                value={options.target_column ?? ""}
+                maxLength={200}
+                placeholder="Column name, e.g. churned or revenue. Leave blank to detect."
+                onChange={(e) => update("target_column", e.target.value.trim() || null)}
+              />
+            )}
+          </label>
+        </fieldset>
+      </Step>
+
+      <Step n={3} title="Deck options" last>
+        <fieldset className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem_6rem]" disabled={busy}>
+          <legend className="sr-only">Deck options</legend>
+          <label className="text-sm font-medium">
+            Audience
             <input
               className={fieldClass}
-              value={options.target_column ?? ""}
+              value={options.audience}
               maxLength={200}
-              placeholder="Column name, e.g. churned or revenue. Leave blank to detect."
-              onChange={(e) => update("target_column", e.target.value.trim() || null)}
+              onChange={(e) => update("audience", e.target.value)}
             />
-          )}
-        </label>
-      </fieldset>
-
-      <fieldset className="mt-6 grid gap-4 sm:grid-cols-2" disabled={busy}>
-        <legend className="mb-3 text-sm font-medium">Deck options</legend>
-        <label className="text-sm text-muted sm:col-span-2">
-          Audience
-          <input
-            className={fieldClass}
-            value={options.audience}
-            maxLength={200}
-            onChange={(e) => update("audience", e.target.value)}
-          />
-        </label>
-        <label className="text-sm text-muted">
-          Tone
-          <select
-            className={fieldClass}
-            value={options.tone}
-            onChange={(e) => update("tone", e.target.value as AnalysisOptions["tone"])}
-          >
-            <option value="executive">Executive</option>
-            <option value="technical">Technical</option>
-            <option value="casual">Casual</option>
-          </select>
-        </label>
-        <label className="text-sm text-muted">
-          Slides
-          <input
-            type="number"
-            className={fieldClass}
-            min={4}
-            max={25}
-            value={options.num_slides}
-            onChange={(e) =>
-              update("num_slides", Math.min(25, Math.max(4, Number(e.target.value) || 4)))
-            }
-          />
-        </label>
-      </fieldset>
+          </label>
+          <label className="text-sm font-medium">
+            Tone
+            <select
+              className={fieldClass}
+              value={options.tone}
+              onChange={(e) => update("tone", e.target.value as AnalysisOptions["tone"])}
+            >
+              <option value="executive">Executive</option>
+              <option value="technical">Technical</option>
+              <option value="casual">Casual</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium">
+            Slides
+            <input
+              type="number"
+              className={fieldClass}
+              min={4}
+              max={25}
+              value={options.num_slides}
+              onChange={(e) =>
+                update("num_slides", Math.min(25, Math.max(4, Number(e.target.value) || 4)))
+              }
+            />
+          </label>
+        </fieldset>
+      </Step>
 
       {error && (
         <p
@@ -207,7 +239,7 @@ export function UploadForm() {
       <button
         type="submit"
         disabled={!file || busy || options.audience.trim() === ""}
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 font-medium text-accent-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 font-medium text-white shadow-sm transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
       >
         {busy ? (
           <>
@@ -220,5 +252,39 @@ export function UploadForm() {
         )}
       </button>
     </form>
+  );
+}
+
+const SAMPLE_ICONS: Record<string, typeof Database> = {
+  ecommerce_orders: ShoppingCart,
+  saas_churn: Repeat,
+  hr_attrition: Users,
+  hospital_readmissions: HeartPulse,
+};
+
+function Step({
+  n,
+  title,
+  hint,
+  last,
+  children,
+}: {
+  n: number;
+  title: string;
+  hint?: string;
+  last?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={cn("pb-6", !last && "mb-6 border-b border-border")}>
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <span className="grid size-5 place-items-center rounded-full bg-accent-soft text-[11px] text-accent">
+          {n}
+        </span>
+        {title}
+        {hint && <span className="font-normal text-muted">· {hint}</span>}
+      </h2>
+      {children}
+    </section>
   );
 }

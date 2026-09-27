@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { Slide } from "@/lib/api/types";
 
 import { SlideView } from "./SlideView";
@@ -14,19 +15,22 @@ export function DeckPreview({ slides, datasetName }: Props) {
   const total = slides.length;
 
   return (
-    <section aria-labelledby="slides-heading" className="space-y-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="slides-heading" className="text-lg font-semibold tracking-tight">
-          Slides
-        </h2>
-        <button
-          type="button"
-          onClick={() => setCurrent(0)}
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
-        >
-          <Maximize2 className="size-4" aria-hidden /> Present
-        </button>
-      </div>
+    <section aria-labelledby="slides-heading">
+      <SectionHeader
+        id="slides-heading"
+        eyebrow="Deck"
+        title="Slides"
+        description="A preview of the downloadable deck. Click any slide to present."
+        action={
+          <button
+            type="button"
+            onClick={() => setCurrent(0)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium shadow-card transition hover:bg-surface-muted"
+          >
+            <Maximize2 className="size-4" aria-hidden /> Present
+          </button>
+        }
+      />
       <ol className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {slides.map((slide, i) => (
           <li key={i}>
@@ -34,7 +38,7 @@ export function DeckPreview({ slides, datasetName }: Props) {
               type="button"
               onClick={() => setCurrent(i)}
               aria-label={`Open slide ${i + 1} of ${total}: ${slideTitle(slide)}`}
-              className="block w-full overflow-hidden rounded-lg border border-border shadow-sm transition hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="block w-full overflow-hidden rounded-xl border border-border shadow-card transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:hover:translate-y-0"
             >
               <div aria-hidden className="pointer-events-none">
                 <SlideView slide={slide} index={i + 1} total={total} datasetName={datasetName} />

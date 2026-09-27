@@ -11,7 +11,7 @@ type Props = {
 export function Card({ title, description, action, className, children }: Props) {
   return (
     <section
-      className={cn("min-w-0 rounded-2xl border border-border bg-surface p-5 sm:p-6", className)}
+      className={cn("min-w-0 rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6", className)}
     >
       <header className="mb-4 flex flex-wrap items-start justify-between gap-2">
         <div>

@@ -17,24 +17,24 @@ const STATUS_TEXT: Record<Stage["status"], string> = {
 
 export function PipelineTracker({ stages }: { stages: Stage[] }) {
   return (
-    <ol aria-label="Pipeline progress" className="grid gap-3 sm:grid-cols-5 sm:gap-0">
+    <ol aria-label="Pipeline progress" className="space-y-4">
       {stages.map((stage, i) => (
         <li
           key={stage.key}
           aria-current={stage.status === "running" ? "step" : undefined}
-          className="relative flex gap-3 sm:flex-col sm:items-center sm:text-center"
+          className="relative flex items-center gap-3"
         >
           {i > 0 && (
             <span
               aria-hidden
               className={cn(
-                "absolute top-4 right-1/2 -left-1/2 hidden h-0.5 sm:block",
+                "absolute -top-4 left-[15px] h-4 w-0.5",
                 stages[i - 1].status === "done" ? "bg-success" : "bg-border",
               )}
             />
           )}
           <StageIcon status={stage.status} index={i} />
-          <div className="min-w-0 sm:mt-2 sm:px-2">
+          <div className="min-w-0">
             <p
               className={cn(
                 "text-sm font-medium",

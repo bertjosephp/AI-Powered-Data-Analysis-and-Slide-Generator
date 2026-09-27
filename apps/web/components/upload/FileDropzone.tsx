@@ -57,7 +57,7 @@ export function FileDropzone({ file, onFileChange, onReject, disabled }: Props) 
     <div
       {...getRootProps()}
       className={cn(
-        "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border px-6 py-12 text-center transition-colors",
+        "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-surface-muted/40 px-6 py-10 text-center transition-colors",
         "hover:border-accent/60 hover:bg-accent-soft/40 focus-visible:outline-2 focus-visible:outline-accent",
         isDragActive && "border-accent bg-accent-soft/60",
         disabled && "pointer-events-none opacity-60",

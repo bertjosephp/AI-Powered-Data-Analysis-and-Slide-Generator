@@ -1,14 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f8;
+  --background: #f8f8fa;
   --surface: #ffffff;
-  --surface-muted: #f1f1f4;
-  --border: #e4e4e9;
-  --foreground: #16161d;
-  --muted: #5f6070;
+  --surface-muted: #f3f3f6;
+  --border: #e6e6ec;
+  --foreground: #111118;
+  --muted: #62626f;
   --accent: #4f46e5;
   --accent-soft: #eef0ff;
+  --glow: rgba(79, 70, 229, 0.08);
+  --shadow: 0 1px 2px rgba(17, 17, 24, 0.04), 0 4px 16px -4px rgba(17, 17, 24, 0.06);
   --accent-foreground: #ffffff;
   --success: #15803d;
   --success-soft: #e9f7ee;
@@ -27,12 +29,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0e0e12;
-    --surface: #17171d;
-    --surface-muted: #1f1f27;
-    --border: #2b2b35;
-    --foreground: #ececf1;
+    --background: #0b0b0f;
+    --surface: #131318;
+    --surface-muted: #1c1c23;
+    --border: #26262f;
+    --foreground: #ededf2;
     --muted: #9d9daf;
+    --glow: rgba(139, 133, 255, 0.10);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
     --accent: #8b85ff;
     --accent-soft: #23223d;
     --accent-foreground: #0e0e12;
@@ -71,6 +75,23 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(1200px 480px at 50% -120px, var(--glow), transparent 70%),
+    var(--background);
+  background-repeat: no-repeat;
   color: var(--foreground);
+}
+
+@utility shadow-card {
+  box-shadow: var(--shadow);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }

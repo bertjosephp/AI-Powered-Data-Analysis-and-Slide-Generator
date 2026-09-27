@@ -43,7 +43,7 @@ export function SummaryCards({ profile }: { profile: DatasetProfile }) {
     <div className="space-y-4">
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {tiles.map((tile) => (
-          <div key={tile.label} className="min-w-0 rounded-xl border border-border bg-surface p-4">
+          <div key={tile.label} className="min-w-0 rounded-2xl border border-border bg-surface p-4 shadow-card">
             <dt className="text-sm text-muted">{tile.label}</dt>
             <dd className="mt-1 text-2xl font-semibold tracking-tight">{tile.value}</dd>
             <dd className="mt-1 text-xs text-muted">{tile.note}</dd>
