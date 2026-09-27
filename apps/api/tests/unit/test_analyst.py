@@ -346,7 +346,7 @@ async def test_refusal_during_exploration_stops() -> None:
     [
         (_status_error(anthropic.AuthenticationError, 401), "key was rejected"),
         (_status_error(anthropic.RateLimitError, 429), "rate limit"),
-        (_status_error(anthropic.InternalServerError, 500), "API error 500"),
+        (_status_error(anthropic.InternalServerError, 500), "HTTP 500"),
         (
             anthropic.APIConnectionError(request=httpx.Request("POST", "https://x")),
             "Could not reach",

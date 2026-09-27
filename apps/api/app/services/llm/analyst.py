@@ -241,8 +241,10 @@ class ClaudeAnalyst:
         except anthropic.RateLimitError as e:
             raise AppError(ErrorCode.LLM_ERROR, "Anthropic rate limit reached. Retry later.") from e
         except anthropic.APIStatusError as e:
+            # The raw message (request ids, schema details) is for the logs, not visitors.
+            log.warning("Anthropic API error %s: %s", e.status_code, e.message)
             raise AppError(
-                ErrorCode.LLM_ERROR, f"Anthropic API error {e.status_code}: {e.message}"
+                ErrorCode.LLM_ERROR, f"Claude returned an error (HTTP {e.status_code})."
             ) from e
         except anthropic.APIConnectionError as e:
             raise AppError(ErrorCode.LLM_ERROR, "Could not reach the Anthropic API.") from e

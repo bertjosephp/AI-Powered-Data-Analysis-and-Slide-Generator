@@ -9,7 +9,8 @@ import type { JobState } from "@/lib/api/types";
 import { jobQueryKey } from "@/lib/hooks/useJobPolling";
 
 const HINTS: Record<string, string> = {
-  LLM_ERROR: "Claude couldn't complete the analysis. Check the Anthropic API key, then retry.",
+  LLM_ERROR:
+    "Claude couldn't complete the analysis. Retrying usually helps; if it keeps failing, try again in a few minutes.",
   LLM_SCHEMA_ERROR: "Claude's answer wasn't in the expected format. Retrying usually fixes this.",
   DECK_RENDER_ERROR:
     "The insights are saved. Retrying renders the deck again without re-running the analysis.",
