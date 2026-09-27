@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  MOCK_EXTERNAL: "true" # CI never calls Claude
+
+jobs:
+  api:
+    name: API · lint, types, tests & insight eval
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/api/pyproject.toml
+      - run: pip install -e ".[dev]" pytest-cov
+      - name: Ruff
+        run: ruff check . && ruff format --check .
+      - name: Mypy (strict)
+        run: mypy app
+      - name: Unit and integration tests
+        run: pytest tests/unit tests/integration --cov=app --cov-report=term --cov-report=markdown:coverage.md
+      - name: Insight-recall eval (planted patterns in 4 datasets)
+        run: pytest tests/eval -v
+      - name: Coverage summary
+        if: always()
+        run: |
+          if [ -f coverage.md ]; then
+            { echo "### API coverage"; echo; cat coverage.md; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  web:
+    name: Web · lint, types, tests & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  e2e:
+    name: End-to-end (Playwright, mock mode)
+    needs: [api, web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/api/pyproject.toml
+      - name: Install API into apps/api/.venv (Playwright starts it from there)
+        run: |
+          python -m venv apps/api/.venv
+          apps/api/.venv/bin/pip install -q -e apps/api
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: apps/web
+      # Uses the Google Chrome preinstalled on ubuntu runners (channel: "chrome").
+      - run: pnpm e2e
+        working-directory: apps/web
+        env:
+          CI: "true"
+          NEXT_TELEMETRY_DISABLED: "1"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: apps/web/test-results
+          retention-days: 7
+
+  docker:
+    name: Docker images build and boot
+    needs: [api, web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api
+          load: true
+          tags: slidegen-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/web
+          load: true
+          tags: slidegen-web:ci
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+      - name: Boot both images and check they answer
+        run: |
+          docker run -d --name api -e PORT=10000 -e MOCK_EXTERNAL=true -p 8000:10000 slidegen-api:ci
+          docker run -d --name web -p 3000:3000 slidegen-web:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/api/v1/health && break
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8000/api/v1/health
+          curl -fsS http://127.0.0.1:8000/api/v1/samples | head -c 300; echo
+          for i in $(seq 1 30); do
+            curl -fsS -o /dev/null http://127.0.0.1:3000 && break
+            sleep 2
+          done
+          curl -fsS -o /dev/null -w "web: HTTP %{http_code}\n" http://127.0.0.1:3000
+      - name: Container logs
+        if: failure()
+        run: docker logs api; docker logs web
