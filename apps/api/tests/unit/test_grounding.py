@@ -9,7 +9,7 @@ from app.services.analysis.analyses import compare_segments
 from app.services.analysis.battery import run_battery
 from app.services.eda.profiler import build_profile
 from app.services.ingestion.loader import load_dataset
-from app.services.llm.grounding import check_grounding
+from app.services.llm.grounding import _NUMBER, check_grounding
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 DATA = Path(__file__).parents[2] / "app" / "sample_data"
@@ -86,3 +86,34 @@ def test_slide_text_is_checked_too() -> None:
     assert [(u.location, u.value) for u in report.unverified] == [
         ("slides[0].bullets[1]", "987.65")
     ]
+
+
+def test_p_values_are_verified_and_thresholds_ignored() -> None:
+    _, findings, _ = _evidence()
+    p = next(f.p_value for f in findings if f.p_value is not None and 0.001 < f.p_value < 1)
+    report = _check(
+        f"This one is weaker (p={p:.2f}); the effect is strong (p < 0.001, "
+        "and a second test gave p≈2e-232)."
+    )
+    assert report.unverified == [] and report.checked == 1
+
+
+def test_category_labels_and_complements_count_as_evidence() -> None:
+    profile, findings, social = _evidence()
+    label = next(c for f in findings for c in f.chart.categories if "%" in c or "-" in c)
+    number = next(m.group(1) for m in _NUMBER.finditer(label))
+    missing = next(c for c in profile.columns if 0 < c.missing_pct < 100)
+    top = social.facts["top_value"]
+    report = _check(
+        f"The {number} band matters. {100 - missing.missing_pct:.1f}% of rows have "
+        f"{missing.name}, and {100 - top:.1f}% of Social orders are kept."
+    )
+    assert report.unverified == [], report.unverified
+
+
+def test_values_of_percent_named_columns_may_be_written_with_a_percent_sign() -> None:
+    profile, findings, _ = _evidence()
+    col = next(c for c in profile.columns if c.name == "discount_pct")
+    assert col.max is not None
+    report = _check(f"Margin collapses at a {col.max:.0f}% discount.")
+    assert report.checked == 1 and report.unverified == []

@@ -22,6 +22,13 @@ _NUMBER = re.compile(
     r"(?<![\w.])([-+−]?\d{1,3}(?:,\d{3})+|[-+−]?\d+(?:\.\d+)?)\s*(%|×|x\b|[KMB]\b|pp\b|points?\b)?(?![\w])"
 )
 _SCALE = {"K": 1e3, "M": 1e6, "B": 1e9}
+# Scientific notation ("p≈2e-232", "3.1 × 10^-5"): tiny p-values, never checked, and
+# blanked out so their exponent isn't read as a number on its own.
+_SCIENTIFIC = re.compile(r"\d+(?:\.\d+)?\s*(?:[eE]|×\s*10\^?)[-+−]?\d+")
+# A significance threshold like "p < 0.001" is a convention, not a result.
+_P_THRESHOLD = re.compile(r"\bp\s*(?:<|≤|<=)\s*$")
+# Columns already in percent units ("discount_pct" = 30 is written "30%").
+_PERCENT_COLUMN = re.compile(r"(?:^|_)(?:pct|percent|percentage|rate)(?:_|$)", re.IGNORECASE)
 SMALL_INTEGER = 12  # counts like "3 takeaways" or "top 10" aren't statistics
 
 
@@ -55,7 +62,10 @@ def check_grounding(
     checked = 0
     unverified: list[UnverifiedNumber] = []
     for location, text in _texts(insights.model_dump()):
-        for match in _NUMBER.finditer(text):
+        scan = _SCIENTIFIC.sub(lambda m: " " * len(m.group(0)), text)
+        for match in _NUMBER.finditer(scan):
+            if _P_THRESHOLD.search(scan[: match.start()]):
+                continue
             unit = match.group(2)
             value, decimals = _parse(match.group(1), unit)
             if value is None or _ignorable(value, decimals, unit):
@@ -129,7 +139,9 @@ def _evidence(profile: DatasetProfile, findings: list[Finding]) -> Evidence:
     ev = Evidence()
     ev.percents.add(profile.missing_pct_total)
     for col in profile.columns:
-        ev.percents.add(col.missing_pct)
+        # Missing share, and its complement ("HbA1c is recorded for 35.5% of patients").
+        ev.percents.update((col.missing_pct, 100 - col.missing_pct))
+        in_percent = _is_percent_column(col.name)
         for key, value in col.model_dump(exclude={"name", "missing_pct"}).items():
             if (
                 isinstance(value, int | float)
@@ -137,6 +149,8 @@ def _evidence(profile: DatasetProfile, findings: list[Finding]) -> Evidence:
                 and math.isfinite(value)
             ):
                 ev.numbers.add(abs(float(value)))
+                if in_percent and key not in ("count", "unique_count", "missing_count"):
+                    ev.percents.add(abs(float(value)))
             elif key == "top_values" and value:
                 ev.numbers.update(float(v["count"]) for v in value)
     for pair in profile.top_correlations:
@@ -147,14 +161,24 @@ def _evidence(profile: DatasetProfile, findings: list[Finding]) -> Evidence:
 
 
 def _add_finding(ev: Evidence, f: Finding) -> None:
-    for text in (f.summary, f.headline, f.title, *f.caveats):
+    # Category and band labels too ("the 25–30% discount band", "tenure 12+").
+    for text in (f.summary, f.headline, f.title, *f.caveats, *f.chart.categories):
         ev.add_text(text)
+    if f.dimension and _is_percent_column(f.dimension):
+        for label in f.chart.categories:
+            for m in _NUMBER.finditer(label):
+                number, _ = _parse(m.group(1), None)
+                if number is not None:
+                    ev.percents.add(abs(number))
     ev.numbers.add(abs(f.effect.value))
+    ev.numbers.update(p for p in (f.p_value, f.q_value) if p is not None and math.isfinite(p))
     if f.effect.name == "rate ratio":
         ev.ratios.add(abs(f.effect.value))
     percent = f.chart.value_format == "percent"
     chart_pool = ev.percents if percent else ev.numbers
     chart_pool.update(abs(v) for v in f.chart.values if math.isfinite(v))
+    if percent:  # a rate's complement ("80% stay" when 20% churn)
+        ev.percents.update(100 - v for v in f.chart.values if 0 <= v <= 100)
     if f.chart.reference is not None:
         chart_pool.add(abs(f.chart.reference))
     for value in f.facts.values():
@@ -163,6 +187,10 @@ def _add_finding(ev: Evidence, f: Finding) -> None:
             if abs(value) <= 1:  # shares (concentration) printed as percentages
                 ev.percents.add(abs(float(value)) * 100)
     _add_comparisons(ev, f, chart_pool)
+
+
+def _is_percent_column(name: str) -> bool:
+    return bool(_PERCENT_COLUMN.search(name))
 
 
 def _add_comparisons(ev: Evidence, finding: Finding, pool: set[float]) -> None:
