@@ -36,11 +36,11 @@ Also set a monthly spend limit in the Anthropic Console as a second safety net.
 ### 1. Render (API)
 
 1. Sign in at [render.com](https://render.com) with GitHub.
-2. Go to **New → Blueprint**, pick this repository, and apply `render.yaml`. This creates `slidegen-api` on the free plan.
+2. Go to **New → Blueprint**, pick this repository, and apply `render.yaml`. This creates `data-to-deck-api` on the free plan.
 3. When prompted, fill in the unsynced variables:
    - `ANTHROPIC_API_KEY`: from the [Anthropic Console](https://console.anthropic.com/settings/keys). Use a dedicated key for the demo.
-   - `CORS_ORIGINS`: the Vercel production URL from step 2, e.g. `https://slidegen.vercel.app`. You can fill it in after step 2.
-   - `CORS_ORIGIN_REGEX` (optional): lets preview deploys call the API, e.g. `https://slidegen-[a-z0-9-]+-yourname\.vercel\.app`.
+   - `CORS_ORIGINS`: the Vercel production URL from step 2, e.g. `https://data-to-deck.vercel.app`. You can fill it in after step 2.
+   - `CORS_ORIGIN_REGEX` (optional): lets preview deploys call the API, e.g. `https://data-to-deck-[a-z0-9-]+-yourname\.vercel\.app`.
 4. Wait for the first deploy, then open `https://<service>.onrender.com/api/v1/health`. It should return `"status":"ok"` and a `demo` block.
 5. Under **Settings → Deploy Hook**, copy the URL. It is a secret.
 

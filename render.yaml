@@ -2,7 +2,7 @@
 # Deploys are triggered by .github/workflows/deploy.yml once CI passes on main.
 services:
   - type: web
-    name: slidegen-api
+    name: data-to-deck-api
     runtime: docker
     rootDir: apps/api
     dockerfilePath: ./Dockerfile
@@ -14,7 +14,7 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false # entered in the Render dashboard, never committed
       - key: CORS_ORIGINS
-        sync: false # the Vercel production URL, e.g. https://slidegen.vercel.app
+        sync: false # the Vercel production URL, e.g. https://data-to-deck.vercel.app
       - key: CORS_ORIGIN_REGEX
         sync: false # optional, lets Vercel preview deploys call the API
       - key: MOCK_EXTERNAL
