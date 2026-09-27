@@ -146,6 +146,11 @@ describe("JobView results", () => {
     expect(within(insights).getByText(jobCompleted.insights!.key_findings[0].title)).toBeInTheDocument();
 
     const findings = screen.getByRole("region", { name: "Findings" });
+    // Every cited finding is on the page so its citation link resolves.
+    for (const id of jobCompleted.insights!.questions_answered[0].finding_ids) {
+      expect(document.getElementById(`finding-${id}`)).not.toBeNull();
+    }
+    await userEvent.click(within(findings).getByRole("button", { name: /show all/i }));
     expect(within(findings).getAllByRole("article")).toHaveLength(jobCompleted.findings!.length);
     expect(within(findings).getAllByText("Strong effect").length).toBeGreaterThan(0);
 

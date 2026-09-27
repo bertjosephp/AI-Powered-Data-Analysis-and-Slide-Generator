@@ -57,6 +57,13 @@ export function JobView({ jobId, pollIntervalMs }: Props) {
     (s) => (s.key === "analyze" || s.key === "explore") && s.status === "running",
   );
   const titles = new Map((job.findings ?? []).map((f) => [f.id, f.title]));
+  const cited = new Set(
+    [
+      ...(job.insights?.questions_answered ?? []),
+      ...(job.insights?.key_findings ?? []),
+      ...(job.insights?.hypotheses ?? []),
+    ].flatMap((item) => item.finding_ids),
+  );
   const current = job.stages.find((s) => s.status === "running");
   const sections = [
     job.insights && { id: "answers", label: job.options.question ? "Your answer" : "Answers" },
@@ -135,7 +142,7 @@ export function JobView({ jobId, pollIntervalMs }: Props) {
 
         {job.findings && (
           <div id="findings" className="scroll-mt-24">
-            <FindingsSection findings={job.findings} />
+            <FindingsSection findings={job.findings} cited={cited} />
           </div>
         )}
 

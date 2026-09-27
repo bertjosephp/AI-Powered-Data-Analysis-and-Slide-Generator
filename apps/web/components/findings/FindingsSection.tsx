@@ -20,7 +20,14 @@ const STRENGTH: Record<Finding["effect"]["strength"], { label: string; className
 
 const INITIAL_VISIBLE = 6;
 
-export function FindingsSection({ findings }: { findings: Finding[] }) {
+export function FindingsSection({
+  findings,
+  cited = new Set(),
+}: {
+  findings: Finding[];
+  /** Findings cited by the answers or insights are always shown, so citations resolve. */
+  cited?: Set<string>;
+}) {
   const [showAll, setShowAll] = useState(false);
   const followUps = findings.filter((f) => f.source === "follow_up").length;
   const header = (
@@ -42,20 +49,16 @@ export function FindingsSection({ findings }: { findings: Finding[] }) {
   if (findings.length === 0) {
     return <section aria-labelledby="findings-heading">{header}</section>;
   }
-  // A citation (#finding-F12) must always resolve, so cited cards stay rendered.
-  const visible = showAll ? findings : findings.slice(0, INITIAL_VISIBLE);
-  const hidden = findings.slice(visible.length);
+  const visible = showAll
+    ? findings
+    : findings.filter((f, i) => i < INITIAL_VISIBLE || cited.has(f.id));
+  const hidden = findings.filter((f) => !visible.includes(f));
   return (
     <section aria-labelledby="findings-heading">
       {header}
       <ol className="grid gap-4 xl:grid-cols-2">
         {visible.map((f) => (
           <li key={f.id} id={`finding-${f.id}`} className="scroll-mt-24">
-            <FindingCard finding={f} />
-          </li>
-        ))}
-        {hidden.map((f) => (
-          <li key={f.id} id={`finding-${f.id}`} className="hidden scroll-mt-24 target:block">
             <FindingCard finding={f} />
           </li>
         ))}
