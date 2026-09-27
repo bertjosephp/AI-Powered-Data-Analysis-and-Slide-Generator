@@ -21,15 +21,16 @@ describe("PipelineTracker", () => {
     expect(items.map((li) => li.textContent)).toEqual([
       "Reading fileStatus: Done",
       "Profiling dataStatus: Done",
-      "Generating insightsStatus: In progress · Usually under a minute",
-      "4Building slide deckStatus: Waiting",
+      "Finding patternsStatus: In progress · Testing patterns",
+      "4Writing the storyStatus: Waiting",
+      "5Building slide deckStatus: Waiting",
     ]);
     expect(items[2]).toHaveAttribute("aria-current", "step");
   });
 
   it("shows a failed stage", () => {
     render(<PipelineTracker stages={jobFailed.stages} />);
-    expect(stageItems()[3]).toHaveTextContent("Failed");
+    expect(stageItems()[4]).toHaveTextContent("Failed");
   });
 
   it("shows all stages done", () => {

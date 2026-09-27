@@ -11,11 +11,11 @@ import { SummaryCards } from "@/components/dataset/SummaryCards";
 import { DeckCard } from "@/components/presentation/DeckCard";
 import type { ColumnProfile, JobState } from "@/lib/api/types";
 
-import { jobCompleted, jobRunning, rawFixtures } from "./fixtures";
+import { jobCompleted, jobRunning, profileSmall, rawFixtures } from "./fixtures";
 import { API, server } from "./msw/server";
 import { renderWithQuery } from "./test-utils";
 
-const profile = jobCompleted.profile!;
+const profile = profileSmall;
 const col = (name: string) => profile.columns.find((c) => c.name === name) as ColumnProfile;
 
 describe("SummaryCards", () => {
@@ -133,15 +133,24 @@ describe("JobView results", () => {
     expect(screen.queryByRole("heading", { name: "Insights" })).not.toBeInTheDocument();
   });
 
-  it("shows insights, hypotheses and the deck when completed", async () => {
+  it("shows the answer, insights, findings and the deck when completed", async () => {
     server.use(http.get(`${API}/jobs/job123`, () => HttpResponse.json(rawFixtures.completed)));
     renderWithQuery(<JobView jobId="job123" />);
-    expect(await screen.findByRole("heading", { name: "Insights" })).toBeInTheDocument();
-    expect(screen.getByText(/revenue is driven far more by which product/i)).toBeInTheDocument();
-    expect(screen.getByText("Price mix drives revenue more than volume")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Your question, answered" })).toBeInTheDocument();
+    const answers = screen.getByRole("region", { name: "Your question, answered" });
+    expect(within(answers).getByText(jobCompleted.options.question!)).toBeInTheDocument();
+    expect(within(answers).getByRole("link", { name: "F1" })).toHaveAttribute("href", "#finding-F1");
+
     const insights = screen.getByRole("region", { name: "Insights" });
-    expect(within(insights).getAllByText(/confidence$/)).toHaveLength(3);
+    expect(within(insights).getByText(/All \d+ figures traced to the analysis/)).toBeInTheDocument();
+    expect(within(insights).getByText(jobCompleted.insights!.key_findings[0].title)).toBeInTheDocument();
+
+    const findings = screen.getByRole("region", { name: "Findings" });
+    expect(within(findings).getAllByRole("article")).toHaveLength(jobCompleted.findings!.length);
+    expect(within(findings).getAllByText("Strong effect").length).toBeGreaterThan(0);
+
     expect(screen.getByText("Your deck is ready")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Slides" })).toBeInTheDocument();
+    expect(screen.getByText(/outcome:/)).toHaveTextContent("returned");
   });
 });

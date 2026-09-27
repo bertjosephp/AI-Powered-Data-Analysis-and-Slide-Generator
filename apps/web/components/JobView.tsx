@@ -7,6 +7,8 @@ import { ColumnTable } from "@/components/dataset/ColumnTable";
 import { CorrelationHeatmap } from "@/components/dataset/CorrelationHeatmap";
 import { MissingValues } from "@/components/dataset/MissingValues";
 import { SummaryCards } from "@/components/dataset/SummaryCards";
+import { FindingsSection } from "@/components/findings/FindingsSection";
+import { AnswersSection } from "@/components/insights/AnswersSection";
 import { ExecutiveSummary } from "@/components/insights/ExecutiveSummary";
 import { HypothesesList } from "@/components/insights/HypothesesList";
 import { NotesList, QuestionsList } from "@/components/insights/QuestionsList";
@@ -50,7 +52,10 @@ export function JobView({ jobId, pollIntervalMs }: Props) {
     );
   }
 
-  const analyzing = job.stages.some((s) => s.key === "analyze" && s.status === "running");
+  const analyzing = job.stages.some(
+    (s) => (s.key === "analyze" || s.key === "explore") && s.status === "running",
+  );
+  const titles = new Map((job.findings ?? []).map((f) => [f.id, f.title]));
   const current = job.stages.find((s) => s.status === "running");
 
   return (
@@ -84,21 +89,30 @@ export function JobView({ jobId, pollIntervalMs }: Props) {
       )}
 
       {job.insights ? (
-        <section className="space-y-4" aria-labelledby="insights-heading">
-          <h2 id="insights-heading" className="text-lg font-semibold tracking-tight">
-            Insights
-          </h2>
-          <ExecutiveSummary insights={job.insights} />
-          <div className="grid gap-4 lg:grid-cols-2">
-            <HypothesesList hypotheses={job.insights.hypotheses} />
-            <QuestionsList questions={job.insights.analytical_questions} />
-            <NotesList title="Recommended next steps" items={job.insights.recommended_next_steps} />
-            <NotesList title="Data quality notes" items={job.insights.data_quality_notes} />
-          </div>
-        </section>
+        <>
+          <AnswersSection
+            answers={job.insights.questions_answered}
+            userQuestion={job.options.question}
+            titles={titles}
+          />
+          <section className="space-y-4" aria-labelledby="insights-heading">
+            <h2 id="insights-heading" className="text-lg font-semibold tracking-tight">
+              Insights
+            </h2>
+            <ExecutiveSummary insights={job.insights} grounding={job.grounding} titles={titles} />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <NotesList title="Recommended actions" items={job.insights.recommended_actions} />
+              <HypothesesList hypotheses={job.insights.hypotheses} titles={titles} />
+              <QuestionsList questions={job.insights.open_questions} />
+              <NotesList title="Data quality notes" items={job.insights.data_quality_notes} />
+            </div>
+          </section>
+        </>
       ) : (
         analyzing && <InsightsSkeleton />
       )}
+
+      {job.findings && <FindingsSection findings={job.findings} />}
 
       {job.profile && (
         <section className="space-y-4" aria-labelledby="dataset-heading">
@@ -140,6 +154,7 @@ const STATUS_BADGE: Record<JobState["status"], { label: string; className: strin
 
 function JobHeader({ job }: { job: JobState }) {
   const badge = STATUS_BADGE[job.status];
+  const target = job.options.target_column ?? job.roles?.targets[0];
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span className="grid size-10 place-items-center rounded-lg bg-accent-soft text-accent">
@@ -149,7 +164,19 @@ function JobHeader({ job }: { job: JobState }) {
         <h1 className="truncate text-xl font-semibold tracking-tight">{job.filename}</h1>
         <p className="text-sm text-muted">
           {job.options.num_slides} slides · {job.options.tone} tone · for {job.options.audience}
+          {target && (
+            <>
+              {" "}
+              · outcome: <span className="font-medium text-foreground">{target}</span>
+            </>
+          )}
         </p>
+        {job.options.question && (
+          <p className="mt-1 text-sm">
+            <span className="text-muted">Question: </span>
+            {job.options.question}
+          </p>
+        )}
       </div>
       <span className={cn("rounded-full px-3 py-1 text-xs font-medium", badge.className)}>
         {badge.label}

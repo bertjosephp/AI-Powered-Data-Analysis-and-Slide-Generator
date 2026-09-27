@@ -1,5 +1,6 @@
 import { FlaskConical } from "lucide-react";
 
+import { FindingChips } from "@/components/findings/FindingChip";
 import { Card } from "@/components/ui/Card";
 import type { Insights } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
@@ -11,9 +12,15 @@ const CONFIDENCE = {
   high: { label: "High confidence", className: "bg-accent text-accent-foreground" },
 };
 
-export function HypothesesList({ hypotheses }: { hypotheses: Insights["hypotheses"] }) {
+export function HypothesesList({
+  hypotheses,
+  titles,
+}: {
+  hypotheses: Insights["hypotheses"];
+  titles: Map<string, string>;
+}) {
   return (
-    <Card title="Hypotheses to test" description="Grounded in the profile; not yet proven">
+    <Card title="Hypotheses to test" description="Grounded in the findings; not yet proven">
       <ul className="space-y-4">
         {hypotheses.map((h) => (
           <li key={h.statement} className="border-b border-border pb-4 last:border-0 last:pb-0">
@@ -33,9 +40,12 @@ export function HypothesesList({ hypotheses }: { hypotheses: Insights["hypothese
               <FlaskConical className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden />
               <span>
                 <span className="sr-only">Suggested test: </span>
-                {h.suggested_test}
+                {h.test}
               </span>
             </p>
+            <div className="mt-2">
+              <FindingChips ids={h.finding_ids} titles={titles} />
+            </div>
           </li>
         ))}
       </ul>

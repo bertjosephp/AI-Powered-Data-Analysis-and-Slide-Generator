@@ -49,24 +49,86 @@ export const DatasetProfileSchema = z.object({
   warnings: z.array(z.string()),
 });
 
+const ConfidenceSchema = z.enum(["low", "medium", "high"]);
+
 export const InsightsSchema = z.object({
   executive_summary: z.string(),
   key_findings: z.array(
-    z.object({ title: z.string(), detail: z.string(), supporting_stats: z.array(z.string()) }),
+    z.object({ title: z.string(), detail: z.string(), finding_ids: z.array(z.string()) }),
   ),
+  questions_answered: z.array(
+    z.object({
+      question: z.string(),
+      answer: z.string(),
+      finding_ids: z.array(z.string()),
+      confidence: ConfidenceSchema,
+    }),
+  ),
+  open_questions: z.array(z.object({ question: z.string(), why_it_matters: z.string() })),
   hypotheses: z.array(
     z.object({
       statement: z.string(),
       rationale: z.string(),
-      suggested_test: z.string(),
-      confidence: z.enum(["low", "medium", "high"]),
+      test: z.string(),
+      finding_ids: z.array(z.string()),
+      confidence: ConfidenceSchema,
     }),
   ),
-  analytical_questions: z.array(z.object({ question: z.string(), why_it_matters: z.string() })),
+  recommended_actions: z.array(z.string()),
   data_quality_notes: z.array(z.string()),
-  recommended_next_steps: z.array(z.string()),
   // The raw spec Claude wrote; the UI renders the resolved `deck` on JobState instead.
   slides: z.array(z.looseObject({ layout: z.string() })),
+});
+
+// Statistically tested findings (apps/api/app/schemas/findings.py). Every number
+// here was computed by the analysis engine, not written by the model.
+export const FindingSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["segment", "trend", "bins", "drivers", "concentration", "crosstab"]),
+  title: z.string(),
+  summary: z.string(),
+  headline: z.string(),
+  target: z.string(),
+  dimension: z.string().nullish(),
+  agg: z.string(),
+  effect: z.object({
+    name: z.string(),
+    value: z.number(),
+    strength: z.enum(["negligible", "weak", "moderate", "strong"]),
+  }),
+  p_value: z.number().nullish(),
+  q_value: z.number().nullish(),
+  n: z.number(),
+  significant: z.boolean(),
+  chart: z.object({
+    kind: z.enum(["bars", "line", "ranking"]),
+    categories: z.array(z.string()),
+    values: z.array(z.number()),
+    value_format: z.enum(["number", "percent", "correlation", "currency"]),
+    reference: z.number().nullish(),
+    reference_label: z.string().nullish(),
+    counts: z.array(z.number()).nullish(),
+  }),
+  caveats: z.array(z.string()),
+  filter: z.string().nullish(),
+  source: z.enum(["battery", "follow_up"]),
+  score: z.number(),
+  facts: z.record(z.string(), z.union([z.string(), z.number(), z.array(z.string())])),
+});
+
+export const ColumnRolesSchema = z.object({
+  time: z.string().nullable(),
+  measures: z.array(z.string()),
+  dimensions: z.array(z.string()),
+  binaries: z.array(z.string()),
+  entity: z.string().nullable(),
+  value_measure: z.string().nullable(),
+  targets: z.array(z.string()),
+});
+
+export const GroundingSchema = z.object({
+  checked: z.number(),
+  unverified: z.array(z.object({ location: z.string(), value: z.string(), context: z.string() })),
 });
 
 export const PresentationSchema = z.object({
@@ -95,11 +157,15 @@ const KpiSlideSchema = z.object({
   kpis: z.array(z.object({ label: z.string(), value: z.string(), caption: z.string() })),
 });
 export const ChartSchema = z.object({
-  kind: z.enum(["correlations", "top_values", "missing_values", "numeric_summary"]),
+  kind: z.enum(["correlations", "top_values", "missing_values", "numeric_summary", "finding"]),
   caption: z.string(),
   categories: z.array(z.string()),
   values: z.array(z.number()),
   value_format: z.enum(["number", "percent", "correlation"]),
+  style: z.enum(["bars", "columns", "line"]).default("bars"),
+  reference: z.number().nullish(),
+  reference_label: z.string().nullish(),
+  finding_id: z.string().nullish(),
 });
 const ChartInsightSlideSchema = z.object({
   layout: z.literal("chart_insight"),
@@ -132,7 +198,7 @@ export const SlideSchema = z.discriminatedUnion("layout", [
   NextStepsSlideSchema,
 ]);
 
-export const StageKeySchema = z.enum(["ingest", "profile", "analyze", "generate_deck"]);
+export const StageKeySchema = z.enum(["ingest", "profile", "explore", "analyze", "generate_deck"]);
 
 export const StageSchema = z.object({
   key: StageKeySchema,
@@ -147,6 +213,8 @@ export const AnalysisOptionsSchema = z.object({
   num_slides: z.number().int().min(4).max(25),
   tone: z.enum(["executive", "technical", "casual"]),
   audience: z.string().max(200),
+  question: z.string().max(300).nullish(),
+  target_column: z.string().max(200).nullish(),
 });
 
 export const JobStateSchema = z.object({
@@ -158,7 +226,10 @@ export const JobStateSchema = z.object({
   updated_at: z.string(),
   stages: z.array(StageSchema),
   profile: DatasetProfileSchema.nullish(),
+  roles: ColumnRolesSchema.nullish(),
+  findings: z.array(FindingSchema).nullish(),
   insights: InsightsSchema.nullish(),
+  grounding: GroundingSchema.nullish(),
   deck: z.array(SlideSchema).nullish(),
   presentation: PresentationSchema.nullish(),
   error: z.object({ stage: StageKeySchema.nullable(), code: z.string(), message: z.string() }).nullish(),
@@ -169,6 +240,17 @@ export const JobCreatedSchema = z.object({
   status: JobStateSchema.shape.status,
 });
 
+export const SampleSchema = z.object({
+  name: z.string(),
+  title: z.string(),
+  description: z.string(),
+  rows: z.number(),
+  columns: z.number(),
+  suggested_question: z.string(),
+  suggested_target: z.string(),
+  filename: z.string(),
+});
+
 export const ErrorEnvelopeSchema = z.object({
   error: z.object({ code: z.string(), message: z.string(), details: z.unknown().optional() }),
 });
@@ -176,6 +258,9 @@ export const ErrorEnvelopeSchema = z.object({
 export type ColumnProfile = z.infer<typeof ColumnProfileSchema>;
 export type DatasetProfile = z.infer<typeof DatasetProfileSchema>;
 export type Insights = z.infer<typeof InsightsSchema>;
+export type Finding = z.infer<typeof FindingSchema>;
+export type Grounding = z.infer<typeof GroundingSchema>;
+export type Sample = z.infer<typeof SampleSchema>;
 export type Presentation = z.infer<typeof PresentationSchema>;
 export type Slide = z.infer<typeof SlideSchema>;
 export type Chart = z.infer<typeof ChartSchema>;

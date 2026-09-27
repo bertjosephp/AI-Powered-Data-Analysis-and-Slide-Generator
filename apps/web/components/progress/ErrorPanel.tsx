@@ -13,6 +13,7 @@ const HINTS: Record<string, string> = {
   LLM_SCHEMA_ERROR: "Claude's answer wasn't in the expected format. Retrying usually fixes this.",
   DECK_RENDER_ERROR:
     "The insights are saved. Retrying renders the deck again without re-running the analysis.",
+  DATASET_EXPIRED: "Uploaded data is kept for an hour. Upload the file again to re-run the analysis.",
   INTERNAL_ERROR: "Something unexpected went wrong on the server.",
 };
 

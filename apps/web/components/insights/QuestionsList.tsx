@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/Card";
 import type { Insights } from "@/lib/api/types";
 
-export function QuestionsList({ questions }: { questions: Insights["analytical_questions"] }) {
+export function QuestionsList({ questions }: { questions: Insights["open_questions"] }) {
   return (
     <Card title="Questions worth asking" description="What this data raises but can't answer alone">
       <ol className="space-y-3">

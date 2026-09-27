@@ -5,18 +5,18 @@ import { UploadForm } from "@/components/upload/UploadForm";
 const STEPS = [
   {
     icon: BarChart3,
-    title: "Profile",
-    body: "Types, missing values, distributions and correlations are computed from your data with Pandas.",
+    title: "Test",
+    body: "Segments, drivers, thresholds and trends are tested statistically, with effect sizes and false-discovery control.",
   },
   {
     icon: Sparkles,
-    title: "Analyze",
-    body: "Claude reads the statistical profile, not your rows, and drafts findings, hypotheses and questions.",
+    title: "Explain",
+    body: "Claude digs into the strongest findings with follow-up analyses and answers your question, citing the evidence.",
   },
   {
     icon: Presentation,
     title: "Present",
-    body: "The story becomes an editable PowerPoint deck with native charts, built from your numbers.",
+    body: "The story becomes an editable PowerPoint deck with native charts, every figure computed from your data.",
   },
 ];
 
@@ -28,7 +28,7 @@ export default function HomePage() {
           Turn a spreadsheet into a slide deck
         </h1>
         <p className="mt-3 text-muted">
-          Upload a dataset and get a statistical profile, AI-written findings, and a presentation.
+          Upload a dataset, ask what you want to know, and get tested findings, clear answers and a presentation.
         </p>
       </section>
 

@@ -4,7 +4,8 @@ import type { Stage } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
 const HINTS: Partial<Record<Stage["key"], string>> = {
-  analyze: "Usually under a minute",
+  explore: "Testing patterns",
+  analyze: "Usually 1–2 minutes",
 };
 
 const STATUS_TEXT: Record<Stage["status"], string> = {
@@ -16,7 +17,7 @@ const STATUS_TEXT: Record<Stage["status"], string> = {
 
 export function PipelineTracker({ stages }: { stages: Stage[] }) {
   return (
-    <ol aria-label="Pipeline progress" className="grid gap-3 sm:grid-cols-4 sm:gap-0">
+    <ol aria-label="Pipeline progress" className="grid gap-3 sm:grid-cols-5 sm:gap-0">
       {stages.map((stage, i) => (
         <li
           key={stage.key}

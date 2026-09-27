@@ -7,6 +7,8 @@ import {
   JobCreatedSchema,
   type JobState,
   JobStateSchema,
+  type Sample,
+  SampleSchema,
 } from "./types";
 
 export const API_BASE_URL = (
@@ -68,4 +70,20 @@ export function retryJob(jobId: string): Promise<JobCreated> {
   return request(`/jobs/${encodeURIComponent(jobId)}/retry`, JobCreatedSchema, {
     method: "POST",
   });
+}
+
+export function listSamples(): Promise<Sample[]> {
+  return request("/samples", SampleSchema.array());
+}
+
+/** Fetches a bundled sample dataset as a File, ready to upload like a user's own. */
+export async function fetchSampleFile(sample: Sample): Promise<File> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/samples/${encodeURIComponent(sample.name)}.csv`);
+  } catch {
+    throw new ApiError(0, "NETWORK_ERROR", "Could not reach the analysis server. Is it running?");
+  }
+  if (!res.ok) throw new ApiError(res.status, `HTTP_${res.status}`, "Could not load the sample dataset.");
+  return new File([await res.text()], sample.filename, { type: "text/csv" });
 }

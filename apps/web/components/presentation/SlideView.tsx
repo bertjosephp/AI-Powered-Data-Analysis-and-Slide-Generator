@@ -178,7 +178,7 @@ function Layout({ slide }: { slide: Slide }) {
           {columns(Math.max(slide.kpis.length, 1)).map(([x, w], i) => {
             const kpi = slide.kpis[i];
             if (!kpi) return null;
-            const size = (slide.kpis.length <= 3 ? 48 : 42) - (kpi.value.length > 7 ? 8 : 0);
+            const size = kpiSize(kpi.value, slide.kpis.length, w - 0.64);
             return (
               <div key={i}>
                 <Card x={x} y={2.35} w={w} h={2.9} />
@@ -215,9 +215,20 @@ function Layout({ slide }: { slide: Slide }) {
         <>
           <Header title={slide.title} eyebrow="Insight" />
           <Card x={MARGIN} y={top} w={chartW} h={height} />
-          <Text at={box(MARGIN + 0.3, top + 0.22, chartW - 0.6, 0.4)} size={13} color={DECK.muted} bold>
+          <Text
+            at={box(MARGIN + 0.3, top + 0.22, chartW - 0.6 - (slide.chart.reference != null ? 2.1 : 0), 0.4)}
+            size={13}
+            color={DECK.muted}
+            bold
+          >
             {slide.chart.caption}
           </Text>
+          {slide.chart.reference != null && (
+            <Text at={box(MARGIN + chartW - 0.3 - 2.1, top + 0.22, 2.1, 0.4)} size={12} color={DECK.muted} align="right">
+              {capitalize(slide.chart.reference_label ?? "overall")}:{" "}
+              {formatChartValue(slide.chart.reference, slide.chart.value_format)}
+            </Text>
+          )}
           <div style={box(MARGIN + 0.35, top + 0.8, chartW - 0.7, height - 1.05)}>
             <ChartView chart={slide.chart} />
           </div>
@@ -401,11 +412,23 @@ function barColor(chart: Chart, value: number) {
   return value >= 0 ? DECK.positive : DECK.negative;
 }
 
+/** Mirrors PptxRenderer._kpi_size: largest size (≤48/42pt) that fits one line. */
+export function kpiSize(value: string, count: number, widthIn: number): number {
+  const base = count <= 3 ? 48 : 42;
+  const fits = Math.floor((widthIn * 72) / (Math.max(value.length, 1) * 0.6));
+  return Math.max(18, Math.min(base, fits));
+}
+
+function capitalize(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function ChartView({ chart }: { chart: Chart }) {
+  if (chart.style === "line") return <LineView chart={chart} />;
   const labelStyle: CSSProperties = { fontSize: pt(12), color: DECK.muted, lineHeight: 1.2 };
   const valueStyle: CSSProperties = { fontSize: pt(12), color: DECK.ink, fontWeight: 700 };
 
-  if (chart.kind === "numeric_summary") {
+  if (chart.kind === "numeric_summary" || chart.style === "columns") {
     const max = Math.max(...chart.values, 0) || 1;
     return (
       <div className="flex h-full items-end" style={{ gap: u(0.3) }}>
@@ -472,6 +495,55 @@ function ChartView({ chart }: { chart: Chart }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function LineView({ chart }: { chart: Chart }) {
+  const values = chart.values;
+  const lo = Math.min(...values, 0);
+  const hi = Math.max(...values);
+  const n = values.length;
+  const x = (i: number) => (i / Math.max(n - 1, 1)) * 100;
+  const y = (v: number) => 88 - ((v - lo) / (hi - lo || 1)) * 80;
+  const peak = values.indexOf(hi);
+  const skip = Math.max(1, Math.ceil(n / 8));
+  const labelStyle: CSSProperties = { fontSize: pt(11), color: DECK.muted };
+  return (
+    <div className="flex h-full flex-col">
+      <div className="relative min-h-0 flex-1">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+          {[0.25, 0.5, 0.75].map((f) => (
+            <line key={f} x1={0} x2={100} y1={8 + f * 80} y2={8 + f * 80} stroke={DECK.cardBorder} strokeWidth={0.4} vectorEffect="non-scaling-stroke" />
+          ))}
+          <polyline
+            points={values.map((v, i) => `${x(i)},${y(v)}`).join(" ")}
+            fill="none"
+            stroke={DECK.accent}
+            strokeWidth={2.5}
+            vectorEffect="non-scaling-stroke"
+            strokeLinejoin="round"
+          />
+        </svg>
+        {[peak, n - 1].map((i) => (
+          <span
+            key={i}
+            className="absolute -translate-x-1/2 -translate-y-full whitespace-nowrap"
+            style={{ left: `${x(i)}%`, top: `${y(values[i])}%`, fontSize: pt(12), fontWeight: 700, color: DECK.ink }}
+          >
+            {formatChartValue(values[i], chart.value_format)}
+          </span>
+        ))}
+      </div>
+      <div className="relative" style={{ height: u(0.3) }}>
+        {chart.categories.map((c, i) =>
+          i % skip === 0 ? (
+            <span key={c} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ ...labelStyle, left: `${x(i)}%` }}>
+              {c}
+            </span>
+          ) : null,
+        )}
+      </div>
     </div>
   );
 }
