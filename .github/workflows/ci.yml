@@ -120,7 +120,7 @@ jobs:
         with:
           context: apps/api
           load: true
-          tags: slidegen-api:ci
+          tags: data-to-deck-api:ci
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
       - name: Build web image
@@ -128,13 +128,13 @@ jobs:
         with:
           context: apps/web
           load: true
-          tags: slidegen-web:ci
+          tags: data-to-deck-web:ci
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
       - name: Boot both images and check they answer
         run: |
-          docker run -d --name api -e PORT=10000 -e MOCK_EXTERNAL=true -p 8000:10000 slidegen-api:ci
-          docker run -d --name web -p 3000:3000 slidegen-web:ci
+          docker run -d --name api -e PORT=10000 -e MOCK_EXTERNAL=true -p 8000:10000 data-to-deck-api:ci
+          docker run -d --name web -p 3000:3000 data-to-deck-web:ci
           for i in $(seq 1 30); do
             curl -fsS http://127.0.0.1:8000/api/v1/health && break
             sleep 2

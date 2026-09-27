@@ -32,10 +32,10 @@ def test_cors_origin_regex_allows_preview_urls() -> None:
         _env_file=None,
         mock_external=True,
         cors_origins=["https://prod.test"],
-        cors_origin_regex=r"https://slidegen-[a-z0-9-]+\.vercel\.app",
+        cors_origin_regex=r"https://data-to-deck-[a-z0-9-]+\.vercel\.app",
     )
     with TestClient(create_app(settings)) as c:
-        ok = c.get("/api/v1/health", headers={"Origin": "https://slidegen-git-pr-3.vercel.app"})
+        ok = c.get("/api/v1/health", headers={"Origin": "https://data-to-deck-git-pr-3.vercel.app"})
         bad = c.get("/api/v1/health", headers={"Origin": "https://evil.test"})
-    assert ok.headers.get("access-control-allow-origin") == "https://slidegen-git-pr-3.vercel.app"
+    assert ok.headers.get("access-control-allow-origin") == "https://data-to-deck-git-pr-3.vercel.app"
     assert "access-control-allow-origin" not in bad.headers

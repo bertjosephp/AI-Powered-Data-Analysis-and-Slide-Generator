@@ -1,5 +1,5 @@
 [project]
-name = "slidegen-api"
+name = "data-to-deck-api"
 version = "0.1.0"
 description = "FastAPI backend: dataset ingestion, EDA, LLM insights, native pptx deck generation"
 requires-python = ">=3.12"
