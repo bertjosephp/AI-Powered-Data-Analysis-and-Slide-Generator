@@ -45,7 +45,8 @@ describe("SlideView", () => {
       (s) => s.layout === "chart_insight" && s.chart?.style === "columns",
     ) as Extract<Slide, { layout: "chart_insight" }>;
     render(<SlideView slide={chartSlide} index={5} total={8} datasetName="sample.csv" />);
-    for (const c of chartSlide.chart!.categories) expect(screen.getByText(c)).toBeInTheDocument();
+    for (const c of chartSlide.chart!.categories) expect(screen.getAllByText(c).length).toBeGreaterThan(0);
+    expect(screen.getByText("WHAT IT MEANS")).toBeInTheDocument();
   });
 
   it("renders a chart slide without a chart as text cards", () => {

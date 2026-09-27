@@ -40,6 +40,15 @@ class DeckRenderer(Protocol):
     def render(self, slides: list[ResolvedSlide], dataset_name: str) -> bytes: ...
 
 
+def emphasis_index(chart: ResolvedChart) -> int | None:
+    """The bar to emphasize: the standout (largest magnitude) for finding charts,
+    where one group or band is the point; none for descriptive charts."""
+    if chart.kind != "finding" or not chart.values or chart.style == "line":
+        return None
+    magnitudes = [abs(v) for v in chart.values]
+    return magnitudes.index(max(magnitudes))
+
+
 class PptxRenderer:
     def __init__(self, theme: Theme = DEFAULT_THEME) -> None:
         self.t = theme
@@ -75,22 +84,34 @@ class PptxRenderer:
         t = self.t
         self._background(slide, t.dark_bg)
         self._rect(slide, 0, 0, Inches(0.22), t.height, t.accent)
-        left, width = Inches(1.1), Inches(10.6)
-        self._rect(slide, left, Inches(2.05), Inches(1.1), Inches(0.07), t.accent_on_dark)
+        left, width = Inches(1.1), Inches(7.6)
+        self._bars_motif(slide, Inches(9.2), Inches(2.0), Inches(3.4), Inches(3.9), dark=True)
         self._text(
             slide,
             left,
-            Inches(2.35),
+            Inches(1.3),
+            Inches(6),
+            Inches(0.35),
+            "DATA STORY",
+            12,
+            t.accent_on_dark,
+            bold=True,
+        )
+        self._rect(slide, left, Inches(1.78), Inches(1.1), Inches(0.07), t.accent_on_dark)
+        self._text(
+            slide,
+            left,
+            Inches(2.0),
             width,
-            Inches(1.9),
+            Inches(2.25),
             s.title,
-            46,
+            40,
             t.on_dark,
             bold=True,
             anchor=MSO_ANCHOR.BOTTOM,
             line_spacing=1.0,
         )
-        self._text(slide, left, Inches(4.4), width, Inches(1.1), s.subtitle, 20, t.on_dark_muted)
+        self._text(slide, left, Inches(4.45), width, Inches(1.2), s.subtitle, 18, t.on_dark_muted)
         self._text(slide, left, Inches(6.45), width, Inches(0.4), s.meta, 12, t.on_dark_muted)
         self._notes(slide, f"{s.title}\n{s.subtitle}\n{s.meta}")
 
@@ -115,18 +136,13 @@ class PptxRenderer:
         for i, (x, w) in enumerate(cols[: len(s.takeaways)]):
             item = s.takeaways[i]
             self._card(slide, x, top, w, height)
+            self._rect(slide, x, top, w, Inches(0.08), t.accent)
             pad = Inches(0.3)
-            self._text(
-                slide,
-                x + pad,
-                top + pad,
-                w - 2 * pad,
-                Inches(0.4),
-                f"{i + 1:02d}",
-                14,
-                t.accent,
-                bold=True,
+            badge = slide.shapes.add_shape(
+                MSO_SHAPE.OVAL, Emu(x + pad), Emu(top + pad), Inches(0.45), Inches(0.45)
             )
+            self._fill(badge, t.accent_soft)
+            self._shape_text(badge, str(i + 1), 13, t.accent, bold=True)
             self._text(
                 slide,
                 x + pad,
@@ -256,9 +272,7 @@ class PptxRenderer:
             height - Inches(0.85),
         )
         side_x = t.margin + chart_w + t.gutter
-        self._bullet_cards(
-            slide, s.bullets, side_x, top, t.width - t.margin - side_x, height, horizontal=False
-        )
+        self._takeaways_panel(slide, s.bullets, side_x, top, t.width - t.margin - side_x, height)
         data = ", ".join(
             f"{c}: {self._format(v, s.chart.value_format)}"
             for c, v in zip(s.chart.categories, s.chart.values, strict=True)
@@ -316,6 +330,9 @@ class PptxRenderer:
         t = self.t
         self._background(slide, t.dark_bg)
         left = Inches(1.1)
+        self._bars_motif(
+            slide, Inches(10.4), Inches(4.4), Inches(2.3), Inches(2.5), dark=True, muted=True
+        )
         self._rect(slide, left, Inches(0.85), Inches(1.1), Inches(0.07), t.accent_on_dark)
         self._text(
             slide,
@@ -491,11 +508,16 @@ class PptxRenderer:
         series.invert_if_negative = False
         series.format.fill.solid()
         series.format.fill.fore_color.rgb = rgb(t.accent)
+        emphasis = emphasis_index(chart)
         for i, value in enumerate(chart.values):
             point = series.points[i]
+            point.format.fill.solid()
             if chart.kind == "correlations":
-                point.format.fill.solid()
                 point.format.fill.fore_color.rgb = rgb(t.positive if value >= 0 else t.negative)
+            else:
+                point.format.fill.fore_color.rgb = rgb(
+                    t.accent if emphasis is None or i == emphasis else t.accent_muted
+                )
             self._point_label(point, self._format(value, chart.value_format))
 
     def _style_line(self, c, series, chart: ResolvedChart) -> None:  # type: ignore[no-untyped-def]
@@ -536,6 +558,72 @@ class PptxRenderer:
         run = label.text_frame.paragraphs[0].runs[0]
         run.font.size, run.font.bold, run.font.color.rgb = Pt(12), True, rgb(self.t.ink)
         run.font.name = self.t.font
+
+    def _takeaways_panel(
+        self, slide: Slide, bullets: list[str], x: int, y: int, w: int, h: int
+    ) -> None:
+        """One card: 'What it means' and the numbered takeaways, stacked from the top."""
+        t = self.t
+        self._card(slide, x, y, w, h)
+        pad = Inches(0.3)
+        self._text(
+            slide,
+            x + pad,
+            y + Inches(0.22),
+            w - 2 * pad,
+            Inches(0.35),
+            "WHAT IT MEANS",
+            11,
+            t.accent,
+            bold=True,
+        )
+        row_y = y + Inches(0.75)
+        row_h = int((h - Inches(0.95)) / max(len(bullets), 1))
+        row_h = min(row_h, Inches(1.3))
+        for i, text in enumerate(bullets):
+            badge = slide.shapes.add_shape(
+                MSO_SHAPE.OVAL, Emu(x + pad), Emu(row_y + i * row_h), Inches(0.36), Inches(0.36)
+            )
+            self._fill(badge, t.accent)
+            self._shape_text(badge, str(i + 1), 11, "#FFFFFF", bold=True)
+            self._text(
+                slide,
+                x + pad + Inches(0.55),
+                row_y + i * row_h - Inches(0.02),
+                w - 2 * pad - Inches(0.55),
+                row_h - Inches(0.1),
+                text,
+                13,
+                t.ink,
+                line_spacing=1.12,
+            )
+
+    def _bars_motif(
+        self, slide: Slide, x: int, y: int, w: int, h: int, *, dark: bool, muted: bool = False
+    ) -> None:
+        """Decorative ascending bars: the brand's data motif."""
+        t = self.t
+        heights = [0.38, 0.55, 0.47, 0.72, 1.0]
+        n = len(heights)
+        gap = int(w * 0.06)
+        bw = int((w - gap * (n - 1)) / n)
+        for i, frac in enumerate(heights):
+            bh = int(h * frac)
+            bar = slide.shapes.add_shape(
+                MSO_SHAPE.ROUNDED_RECTANGLE,
+                Emu(x + i * (bw + gap)),
+                Emu(y + h - bh),
+                Emu(bw),
+                Emu(bh),
+            )
+            bar.adjustments[0] = 0.12
+            if muted:
+                color = t.motif_dark
+            elif i == n - 1:
+                color = t.accent
+            else:
+                color = t.motif_dark if dark else t.accent_soft
+            self._fill(bar, color)
 
     def _pill(self, slide: Slide, x: int, y: int, text: str, level: str) -> None:
         t = self.t

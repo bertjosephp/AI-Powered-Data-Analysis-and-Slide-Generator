@@ -30,6 +30,8 @@ class Theme:
     # Accent (indigo) and data colors (validated diverging pair, see web viz tokens)
     accent: str = "#4F46E5"
     accent_soft: str = "#EEF0FF"
+    accent_muted: str = "#C9C6F5"  # de-emphasized bars; the standout stays full accent
+    motif_dark: str = "#23233A"  # decorative shapes on dark slides
     accent_on_dark: str = "#8B85FF"
     positive: str = "#2A78D6"
     negative: str = "#E34948"

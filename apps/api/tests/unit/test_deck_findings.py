@@ -118,3 +118,17 @@ def test_long_kpi_headlines_shrink_to_fit() -> None:
     assert 18 <= long_size < 42
     # Estimated rendered width stays within the card.
     assert len("17.6% vs 6.3%") * 0.6 * Pt(long_size) <= width
+
+
+def test_finding_bars_emphasize_the_standout() -> None:
+    from app.services.deck.theme import DEFAULT_THEME
+
+    segment = _find("segment")
+    deck = _render([_chart_slide(segment.id)])
+    chart = next(s for s in deck.slides[0].shapes if s.has_chart).chart
+    colors = [str(p.format.fill.fore_color.rgb) for p in chart.plots[0].series[0].points]
+    standout = max(range(len(segment.chart.values)), key=lambda i: abs(segment.chart.values[i]))
+    assert colors[standout] == DEFAULT_THEME.accent.lstrip("#")
+    assert all(
+        c == DEFAULT_THEME.accent_muted.lstrip("#") for i, c in enumerate(colors) if i != standout
+    )

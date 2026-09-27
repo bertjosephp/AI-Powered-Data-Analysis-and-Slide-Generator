@@ -19,6 +19,8 @@ const DECK = {
   accent: "#4F46E5",
   accentSoft: "#EEF0FF",
   accentOnDark: "#8B85FF",
+  accentMuted: "#C9C6F5",
+  motifDark: "#23233A",
   positive: "#2A78D6",
   negative: "#E34948",
 };
@@ -125,14 +127,18 @@ function Layout({ slide }: { slide: Slide }) {
       return (
         <>
           <Rect at={box(0, 0, 0.22, 7.5)} color={DECK.accent} />
-          <Rect at={box(1.1, 2.05, 1.1, 0.07)} color={DECK.accentOnDark} />
-          <Text at={box(1.1, 2.35, 10.6, 1.9)} size={46} color={DECK.onDark} bold leading={1} anchor="bottom">
+          <BarsMotif x={9.2} y={2.0} w={3.4} h={3.9} />
+          <Text at={box(1.1, 1.3, 6, 0.35)} size={12} color={DECK.accentOnDark} bold>
+            DATA STORY
+          </Text>
+          <Rect at={box(1.1, 1.78, 1.1, 0.07)} color={DECK.accentOnDark} />
+          <Text at={box(1.1, 2.0, 7.6, 2.25)} size={40} color={DECK.onDark} bold leading={1} anchor="bottom">
             {slide.title}
           </Text>
-          <Text at={box(1.1, 4.4, 10.6, 1.1)} size={20} color={DECK.onDarkMuted}>
+          <Text at={box(1.1, 4.45, 7.6, 1.2)} size={18} color={DECK.onDarkMuted}>
             {slide.subtitle}
           </Text>
-          <Text at={box(1.1, 6.45, 10.6, 0.4)} size={12} color={DECK.onDarkMuted}>
+          <Text at={box(1.1, 6.45, 7.6, 0.4)} size={12} color={DECK.onDarkMuted}>
             {slide.meta}
           </Text>
         </>
@@ -151,9 +157,10 @@ function Layout({ slide }: { slide: Slide }) {
             return (
               <div key={i}>
                 <Card x={x} y={2.6} w={w} h={3.75} />
-                <Text at={box(x + 0.3, 2.9, w - 0.6, 0.4)} size={14} color={DECK.accent} bold>
-                  {String(i + 1).padStart(2, "0")}
-                </Text>
+                <Rect at={box(x, 2.6, w, 0.08)} color={DECK.accent} />
+                <Badge x={x + 0.3} y={2.9} size={0.45} bg={DECK.accentSoft} fg={DECK.accent} pt={13}>
+                  {i + 1}
+                </Badge>
                 <Text at={box(x + 0.3, 3.4, w - 0.6, 0.9)} size={19} color={DECK.ink} bold leading={1.05}>
                   {item.title}
                 </Text>
@@ -232,14 +239,7 @@ function Layout({ slide }: { slide: Slide }) {
           <div style={box(MARGIN + 0.35, top + 0.8, chartW - 0.7, height - 1.05)}>
             <ChartView chart={slide.chart} />
           </div>
-          <BulletCards
-            bullets={slide.bullets}
-            x={sideX}
-            y={top}
-            w={SLIDE_WIDTH_IN - MARGIN - sideX}
-            h={height}
-            horizontal={false}
-          />
+          <TakeawaysPanel bullets={slide.bullets} x={sideX} y={top} w={SLIDE_WIDTH_IN - MARGIN - sideX} h={height} />
         </>
       );
     }
@@ -292,6 +292,7 @@ function Layout({ slide }: { slide: Slide }) {
     case "next_steps":
       return (
         <>
+          <BarsMotif x={10.4} y={4.4} w={2.3} h={2.5} muted />
           <Rect at={box(1.1, 0.85, 1.1, 0.07)} color={DECK.accentOnDark} />
           <Text at={box(1.1, 1.05, 11.2, 1.3)} size={32} color={DECK.onDark} bold leading={1}>
             {slide.title}
@@ -407,9 +408,95 @@ export function formatChartValue(value: number, kind: Chart["value_format"]): st
   return String(Number(value.toPrecision(3)));
 }
 
-function barColor(chart: Chart, value: number) {
-  if (chart.kind !== "correlations") return DECK.accent;
-  return value >= 0 ? DECK.positive : DECK.negative;
+/** Mirrors pptx_renderer.emphasis_index: finding charts highlight their standout bar. */
+function emphasisIndex(chart: Chart): number | null {
+  if (chart.kind !== "finding" || chart.values.length === 0 || chart.style === "line") return null;
+  const magnitudes = chart.values.map(Math.abs);
+  return magnitudes.indexOf(Math.max(...magnitudes));
+}
+
+function barColor(chart: Chart, value: number, index: number) {
+  if (chart.kind === "correlations") return value >= 0 ? DECK.positive : DECK.negative;
+  const emphasis = emphasisIndex(chart);
+  return emphasis === null || emphasis === index ? DECK.accent : DECK.accentMuted;
+}
+
+function Badge({
+  x,
+  y,
+  size,
+  bg,
+  fg,
+  pt: points,
+  children,
+}: {
+  x: number;
+  y: number;
+  size: number;
+  bg: string;
+  fg: string;
+  pt: number;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        ...box(x, y, size, size),
+        background: bg,
+        color: fg,
+        borderRadius: "50%",
+        fontSize: pt(points),
+        fontWeight: 700,
+        display: "grid",
+        placeItems: "center",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function TakeawaysPanel({ bullets, x, y, w, h }: { bullets: string[]; x: number; y: number; w: number; h: number }) {
+  const rowH = Math.min((h - 0.95) / Math.max(bullets.length, 1), 1.3);
+  return (
+    <>
+      <Card x={x} y={y} w={w} h={h} />
+      <Text at={box(x + 0.3, y + 0.22, w - 0.6, 0.35)} size={11} color={DECK.accent} bold>
+        WHAT IT MEANS
+      </Text>
+      {bullets.map((text, i) => {
+        const rowY = y + 0.75 + i * rowH;
+        return (
+          <div key={i}>
+            <Badge x={x + 0.3} y={rowY} size={0.36} bg={DECK.accent} fg="#FFFFFF" pt={11}>
+              {i + 1}
+            </Badge>
+            <Text at={box(x + 0.85, rowY - 0.02, w - 1.15, rowH - 0.1)} size={13} color={DECK.ink} leading={1.12}>
+              {text}
+            </Text>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function BarsMotif({ x, y, w, h, muted }: { x: number; y: number; w: number; h: number; muted?: boolean }) {
+  const heights = [0.38, 0.55, 0.47, 0.72, 1.0];
+  const gap = w * 0.06;
+  const bw = (w - gap * (heights.length - 1)) / heights.length;
+  return (
+    <>
+      {heights.map((frac, i) => (
+        <Rect
+          key={i}
+          at={box(x + i * (bw + gap), y + h - h * frac, bw, h * frac)}
+          color={!muted && i === heights.length - 1 ? DECK.accent : DECK.motifDark}
+          radius={Math.min(bw, h * frac) * 0.12}
+        />
+      ))}
+    </>
+  );
 }
 
 /** Mirrors PptxRenderer._kpi_size: largest size (≤48/42pt) that fits one line. */
@@ -440,7 +527,7 @@ function ChartView({ chart }: { chart: Chart }) {
                 width: "100%",
                 height: `${(Math.max(chart.values[i], 0) / max) * 78}%`,
                 minHeight: 2,
-                background: barColor(chart, chart.values[i]),
+                background: barColor(chart, chart.values[i], i),
                 borderRadius: `${u(0.05)} ${u(0.05)} 0 0`,
               }}
             />
@@ -473,7 +560,7 @@ function ChartView({ chart }: { chart: Chart }) {
                   height: "100%",
                   width: `${pct}%`,
                   left: signed ? (value >= 0 ? "50%" : `${50 - pct}%`) : 0,
-                  background: barColor(chart, value),
+                  background: barColor(chart, value, i),
                   borderRadius: u(0.04),
                 }}
               />
