@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8f8fa;
+  --surface: #ffffff;
+  --surface-muted: #f3f3f6;
+  --border: #e6e6ec;
+  --foreground: #111118;
+  --muted: #62626f;
+  --accent: #4f46e5;
+  --accent-soft: #eef0ff;
+  --glow: rgba(79, 70, 229, 0.08);
+  --shadow: 0 1px 2px rgba(17, 17, 24, 0.04), 0 4px 16px -4px rgba(17, 17, 24, 0.06);
+  --accent-foreground: #ffffff;
+  --success: #15803d;
+  --success-soft: #e9f7ee;
+  --warning: #b45309;
+  --warning-soft: #fdf4e6;
+  --danger: #c2261d;
+  --danger-soft: #fdeceb;
+  /* Charts: diverging blue<->red with a gray midpoint; single-hue bars. Validated
+     with the dataviz palette validator against --surface in both modes. */
+  --viz-pos: #2a78d6;
+  --viz-neg: #e34948;
+  --viz-mid: #f0efec;
+  --viz-bar: #2a78d6;
+  --viz-track: #ececef;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b0b0f;
+    --surface: #131318;
+    --surface-muted: #1c1c23;
+    --border: #26262f;
+    --foreground: #ededf2;
+    --muted: #9d9daf;
+    --glow: rgba(139, 133, 255, 0.10);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+    --accent: #8b85ff;
+    --accent-soft: #23223d;
+    --accent-foreground: #0e0e12;
+    --success: #4ade80;
+    --success-soft: #142a1c;
+    --warning: #fbbf24;
+    --warning-soft: #2e2413;
+    --danger: #f87171;
+    --danger-soft: #331a1a;
+    --viz-pos: #3987e5;
+    --viz-neg: #e66767;
+    --viz-mid: #383835;
+    --viz-bar: #3987e5;
+    --viz-track: #26262f;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background:
+    radial-gradient(1200px 480px at 50% -120px, var(--glow), transparent 70%),
+    var(--background);
+  background-repeat: no-repeat;
+  color: var(--foreground);
+}
+
+@utility shadow-card {
+  box-shadow: var(--shadow);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes wake {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

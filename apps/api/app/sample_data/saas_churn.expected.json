@@ -1,0 +1,52 @@
+{
+  "name": "saas_churn",
+  "rows": 3000,
+  "columns": 20,
+  "title": "SaaS subscriptions",
+  "description": "B2B SaaS accounts: plan, billing, usage, support load, NPS and whether they churned.",
+  "suggested_question": "Which customers churn, and what warning signs show up first?",
+  "suggested_target": "churned",
+  "planted": [
+    {
+      "id": "monthly_billing",
+      "kind": "segment",
+      "target": "churned",
+      "dimension": "billing_cycle",
+      "top": "Monthly"
+    },
+    {
+      "id": "basic_plan",
+      "kind": "segment",
+      "target": "churned",
+      "dimension": "plan",
+      "top": "Basic"
+    },
+    {
+      "id": "low_logins",
+      "kind": "bins",
+      "target": "churned",
+      "driver": "avg_weekly_logins",
+      "direction": "decreasing"
+    },
+    {
+      "id": "support_tickets",
+      "kind": "bins",
+      "target": "churned",
+      "driver": "support_tickets_90d",
+      "direction": "increasing"
+    },
+    {
+      "id": "early_tenure",
+      "kind": "bins",
+      "target": "churned",
+      "driver": "tenure_months",
+      "direction": "decreasing"
+    }
+  ],
+  "noise_columns": [
+    "industry",
+    "region",
+    "discount_applied",
+    "avg_resolution_hours"
+  ]
+}

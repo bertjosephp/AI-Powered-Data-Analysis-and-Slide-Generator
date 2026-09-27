@@ -1,0 +1,214 @@
+{
+  "executive_summary": "Across 40 orders from January to October 2025, revenue is driven far more by which product is sold than by volume: unit price correlates with revenue at r = 0.78, versus r = 0.59 for units. Gizmo is the most-ordered product and the South the most active region. Discounts average 14.5% and about 22% of orders are returned, both worth investigating before scaling promotions.",
+  "key_findings": [
+    {
+      "title": "Price mix drives revenue more than volume",
+      "detail": "Revenue tracks unit price more closely than units sold, so shifting mix toward higher-priced products likely moves revenue more than pushing volume.",
+      "finding_ids": []
+    },
+    {
+      "title": "Revenue per order is right-skewed",
+      "detail": "Mean revenue per order (685.06) sits well above the median (463.25), so a few large orders carry a disproportionate share.",
+      "finding_ids": []
+    },
+    {
+      "title": "South leads order count",
+      "detail": "South accounts for the most orders among the four regions, followed by North.",
+      "finding_ids": []
+    },
+    {
+      "title": "Returns are material",
+      "detail": "Roughly one in five orders is returned, a meaningful drag on realized revenue.",
+      "finding_ids": []
+    }
+  ],
+  "questions_answered": [
+    {
+      "question": "What drives revenue?",
+      "answer": "Price mix, more than volume: unit price tracks revenue more closely than units.",
+      "finding_ids": [],
+      "confidence": "medium"
+    }
+  ],
+  "open_questions": [
+    {
+      "question": "What margin does each product carry after discounts and returns?",
+      "why_it_matters": "Revenue alone may favor products that are less profitable."
+    },
+    {
+      "question": "Why are two orders missing a region?",
+      "why_it_matters": "Gaps in regional attribution distort territory performance."
+    },
+    {
+      "question": "Is there seasonality in weekly order value?",
+      "why_it_matters": "The data spans nine months, enough to check for early seasonal patterns."
+    }
+  ],
+  "hypotheses": [
+    {
+      "statement": "Shifting product mix toward Gizmo increases revenue per order.",
+      "rationale": "Unit price has the strongest correlation with revenue in the profile.",
+      "test": "A/B test merchandising that features Gizmo and compare revenue per order.",
+      "finding_ids": [],
+      "confidence": "medium"
+    },
+    {
+      "statement": "Higher discounts do not increase units per order.",
+      "rationale": "Discount shows no strong correlation with units (|r| < 0.5).",
+      "test": "Regress units on discount, controlling for product and region.",
+      "finding_ids": [],
+      "confidence": "low"
+    },
+    {
+      "statement": "Return rates differ by product.",
+      "rationale": "The overall 22.5% return rate is high enough that it probably varies across segments.",
+      "test": "Chi-square test of returned vs product.",
+      "finding_ids": [],
+      "confidence": "low"
+    }
+  ],
+  "recommended_actions": [
+    "Join cost data to compute margin per product.",
+    "Break returns down by product and region.",
+    "Collect at least two more quarters of orders before setting pricing strategy."
+  ],
+  "data_quality_notes": [
+    "discount is missing for 3 of 40 orders (7.5%).",
+    "region is missing for 2 of 40 orders (5%).",
+    "With only 40 orders, correlations are directional, not conclusive."
+  ],
+  "slides": [
+    {
+      "layout": "title",
+      "title": "What really drives our revenue",
+      "subtitle": "Nine months of orders show product mix matters more than volume"
+    },
+    {
+      "layout": "executive_summary",
+      "headline": "Revenue follows price mix, not order volume, and one in five orders comes back",
+      "takeaways": [
+        {
+          "title": "Price mix leads",
+          "text": "Unit price tracks revenue more closely than units sold, so shifting mix toward premium products moves the top line most."
+        },
+        {
+          "title": "A few big orders",
+          "text": "Average order value sits well above the median: a handful of large orders carry a disproportionate share of revenue."
+        },
+        {
+          "title": "Returns are material",
+          "text": "Roughly one in five orders is returned, a real drag on realized revenue that deserves its own investigation."
+        }
+      ]
+    },
+    {
+      "layout": "kpi_cards",
+      "title": "The business at a glance",
+      "kpis": [
+        {
+          "label": "Orders analyzed",
+          "metric": {
+            "metric": "rows",
+            "column": null,
+            "finding_id": null
+          }
+        },
+        {
+          "label": "Median order value",
+          "metric": {
+            "metric": "median",
+            "column": "revenue",
+            "finding_id": null
+          }
+        },
+        {
+          "label": "Largest order",
+          "metric": {
+            "metric": "max",
+            "column": "revenue",
+            "finding_id": null
+          }
+        },
+        {
+          "label": "Top region share",
+          "metric": {
+            "metric": "top_value_share",
+            "column": "region",
+            "finding_id": null
+          }
+        }
+      ]
+    },
+    {
+      "layout": "chart_insight",
+      "title": "Price, not volume, moves revenue",
+      "bullets": [
+        "Unit price has the strongest relationship with revenue of any field.",
+        "Units sold matter, but noticeably less than which product is sold.",
+        "Discount shows no strong link to volume, so promotions may not pay."
+      ],
+      "chart": {
+        "chart": "correlations",
+        "column": null,
+        "finding_id": null
+      }
+    },
+    {
+      "layout": "chart_insight",
+      "title": "Gizmo leads a close product race",
+      "bullets": [
+        "Gizmo is the most-ordered product, but the three are close.",
+        "Mix shifts toward Gizmo would lift revenue if its price holds."
+      ],
+      "chart": {
+        "chart": "top_values",
+        "column": "product",
+        "finding_id": null
+      }
+    },
+    {
+      "layout": "chart_insight",
+      "title": "Order values are right-skewed",
+      "bullets": [
+        "The median order is far below the largest, so outliers drive averages.",
+        "Report medians alongside means when tracking order value."
+      ],
+      "chart": {
+        "chart": "numeric_summary",
+        "column": "revenue",
+        "finding_id": null
+      }
+    },
+    {
+      "layout": "hypotheses",
+      "title": "Hypotheses worth testing next",
+      "items": [
+        {
+          "statement": "Featuring Gizmo more prominently raises revenue per order.",
+          "test": "A/B test merchandising that leads with Gizmo; compare revenue per order.",
+          "confidence": "medium"
+        },
+        {
+          "statement": "Deeper discounts do not increase units per order.",
+          "test": "Regress units on discount, controlling for product and region.",
+          "confidence": "low"
+        },
+        {
+          "statement": "Return rates differ meaningfully by product.",
+          "test": "Chi-square test of returned versus product on the full order history.",
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "layout": "next_steps",
+      "title": "Recommended next steps",
+      "steps": [
+        "Join cost data to compute margin per product before changing prices.",
+        "Break returns down by product and region to find the root cause.",
+        "Run the Gizmo merchandising test for four weeks.",
+        "Extend the analysis window to capture seasonality."
+      ]
+    }
+  ]
+}

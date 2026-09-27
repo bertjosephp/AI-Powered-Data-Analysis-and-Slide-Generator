@@ -1,0 +1,43 @@
+{
+  "name": "hospital_readmissions",
+  "rows": 4000,
+  "columns": 19,
+  "title": "Hospital readmissions",
+  "description": "Two years of inpatient admissions: diagnosis, history, length of stay, labs, discharge plan and 30-day readmission.",
+  "suggested_question": "Which patients are readmitted within 30 days, and what could prevent it?",
+  "suggested_target": "readmitted_30d",
+  "planted": [
+    {
+      "id": "no_follow_up",
+      "kind": "segment",
+      "target": "readmitted_30d",
+      "dimension": "follow_up_scheduled",
+      "top": "False"
+    },
+    {
+      "id": "prior_admissions",
+      "kind": "bins",
+      "target": "readmitted_30d",
+      "driver": "prior_admissions_12m",
+      "direction": "increasing"
+    },
+    {
+      "id": "heart_failure",
+      "kind": "segment",
+      "target": "readmitted_30d",
+      "dimension": "primary_diagnosis",
+      "top": "Heart failure"
+    },
+    {
+      "id": "high_hba1c",
+      "kind": "bins",
+      "target": "readmitted_30d",
+      "driver": "hba1c",
+      "direction": "increasing"
+    }
+  ],
+  "noise_columns": [
+    "sex",
+    "num_procedures"
+  ]
+}

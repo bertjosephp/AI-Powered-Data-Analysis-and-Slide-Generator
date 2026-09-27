@@ -1,0 +1,2040 @@
+{
+  "job_id": "job123",
+  "filename": "ecommerce_orders.csv",
+  "options": {
+    "num_slides": 8,
+    "tone": "executive",
+    "audience": "business stakeholders",
+    "question": "What is hurting our margin, and where are returns coming from?",
+    "target_column": "returned"
+  },
+  "status": "failed",
+  "created_at": "2026-01-01T12:00:00Z",
+  "updated_at": "2026-01-01T12:00:00Z",
+  "stages": [
+    {
+      "key": "ingest",
+      "label": "Reading file",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:00Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "profile",
+      "label": "Profiling data",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:10Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "explore",
+      "label": "Finding patterns",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:20Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "analyze",
+      "label": "Writing the story",
+      "status": "done",
+      "started_at": "2026-01-01T12:00:30Z",
+      "finished_at": null,
+      "message": null
+    },
+    {
+      "key": "generate_deck",
+      "label": "Building slide deck",
+      "status": "failed",
+      "started_at": "2026-01-01T12:00:40Z",
+      "finished_at": null,
+      "message": "The slide deck could not be rendered."
+    }
+  ],
+  "profile": {
+    "n_rows": 5000,
+    "n_cols": 22,
+    "memory_bytes": 3191739,
+    "duplicate_rows": 0,
+    "missing_cells_total": 1738,
+    "missing_pct_total": 1.58,
+    "sampled": false,
+    "sample_rows": null,
+    "columns": [
+      {
+        "name": "order_id",
+        "inferred_type": "id",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 5000,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "order_date",
+        "inferred_type": "datetime",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 729,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": "2024-01-01T00:00:00",
+        "max_date": "2025-12-31T00:00:00"
+      },
+      {
+        "name": "customer_id",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 761,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "C1052",
+            "count": 309
+          },
+          {
+            "value": "C0207",
+            "count": 173
+          },
+          {
+            "value": "C0728",
+            "count": 158
+          },
+          {
+            "value": "C0298",
+            "count": 145
+          },
+          {
+            "value": "C0400",
+            "count": 92
+          },
+          {
+            "value": "C0671",
+            "count": 83
+          },
+          {
+            "value": "C0210",
+            "count": 69
+          },
+          {
+            "value": "C0685",
+            "count": 65
+          },
+          {
+            "value": "C1134",
+            "count": 64
+          },
+          {
+            "value": "C0529",
+            "count": 62
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "customer_segment",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 3,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "Consumer",
+            "count": 3669
+          },
+          {
+            "value": "Small Business",
+            "count": 1093
+          },
+          {
+            "value": "Enterprise",
+            "count": 238
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "customer_age",
+        "inferred_type": "numeric",
+        "dtype": "int64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 57,
+        "mean": 46.051,
+        "std": 17.319665,
+        "min": 18.0,
+        "p25": 32.0,
+        "median": 46.0,
+        "p75": 61.0,
+        "max": 74.0,
+        "skew": 0.061549,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "is_first_order",
+        "inferred_type": "boolean",
+        "dtype": "bool",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 2,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "False",
+            "count": 4239
+          },
+          {
+            "value": "True",
+            "count": 761
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "channel",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 6,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "Organic Search",
+            "count": 1201
+          },
+          {
+            "value": "Paid Search",
+            "count": 999
+          },
+          {
+            "value": "Direct",
+            "count": 857
+          },
+          {
+            "value": "Social",
+            "count": 814
+          },
+          {
+            "value": "Email",
+            "count": 718
+          },
+          {
+            "value": "Affiliate",
+            "count": 411
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "device",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 3,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "Mobile",
+            "count": 2732
+          },
+          {
+            "value": "Desktop",
+            "count": 1905
+          },
+          {
+            "value": "Tablet",
+            "count": 363
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "region",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 4,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "East",
+            "count": 1355
+          },
+          {
+            "value": "North",
+            "count": 1322
+          },
+          {
+            "value": "South",
+            "count": 1178
+          },
+          {
+            "value": "West",
+            "count": 1145
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "product_category",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 6,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "Apparel",
+            "count": 1104
+          },
+          {
+            "value": "Home",
+            "count": 993
+          },
+          {
+            "value": "Electronics",
+            "count": 941
+          },
+          {
+            "value": "Beauty",
+            "count": 675
+          },
+          {
+            "value": "Sports",
+            "count": 670
+          },
+          {
+            "value": "Toys",
+            "count": 617
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "unit_price",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 4150,
+        "mean": 89.628246,
+        "std": 73.375032,
+        "min": 15.16,
+        "p25": 41.0975,
+        "median": 61.34,
+        "p75": 99.63,
+        "max": 470.94,
+        "skew": 1.651853,
+        "outlier_count": 704,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "units",
+        "inferred_type": "numeric",
+        "dtype": "int64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 13,
+        "mean": 2.1676,
+        "std": 1.306389,
+        "min": 1.0,
+        "p25": 1.0,
+        "median": 2.0,
+        "p75": 3.0,
+        "max": 14.0,
+        "skew": 1.885349,
+        "outlier_count": 62,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "discount_pct",
+        "inferred_type": "numeric",
+        "dtype": "int64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 7,
+        "mean": 10.437,
+        "std": 9.880463,
+        "min": 0.0,
+        "p25": 0.0,
+        "median": 10.0,
+        "p75": 20.0,
+        "max": 30.0,
+        "skew": 0.543246,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "revenue",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 4564,
+        "mean": 173.714798,
+        "std": 197.52798,
+        "min": 15.24,
+        "p25": 59.455,
+        "median": 106.56,
+        "p75": 202.3275,
+        "max": 2329.55,
+        "skew": 3.259783,
+        "outlier_count": 432,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "cost",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 4324,
+        "mean": 119.161458,
+        "std": 149.570207,
+        "min": 8.3,
+        "p25": 35.74,
+        "median": 66.21,
+        "p75": 136.485,
+        "max": 2125.23,
+        "skew": 3.394991,
+        "outlier_count": 490,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "margin",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 3939,
+        "mean": 54.55334,
+        "std": 56.200099,
+        "min": -8.34,
+        "p25": 20.995,
+        "median": 36.87,
+        "p75": 65.5725,
+        "max": 722.07,
+        "skew": 3.333539,
+        "outlier_count": 382,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "shipping_method",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 3,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "Standard",
+            "count": 2955
+          },
+          {
+            "value": "Express",
+            "count": 1040
+          },
+          {
+            "value": "Economy",
+            "count": 1005
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "shipping_days",
+        "inferred_type": "numeric",
+        "dtype": "int64",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 13,
+        "mean": 4.6784,
+        "std": 2.05383,
+        "min": 1.0,
+        "p25": 3.0,
+        "median": 4.0,
+        "p75": 6.0,
+        "max": 13.0,
+        "skew": 0.432485,
+        "outlier_count": 22,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "returned",
+        "inferred_type": "boolean",
+        "dtype": "bool",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 2,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "False",
+            "count": 4530
+          },
+          {
+            "value": "True",
+            "count": 470
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "rating",
+        "inferred_type": "numeric",
+        "dtype": "float64",
+        "missing_count": 1738,
+        "missing_pct": 34.76,
+        "unique_count": 5,
+        "mean": 4.02759,
+        "std": 0.846646,
+        "min": 1.0,
+        "p25": 3.0,
+        "median": 4.0,
+        "p75": 5.0,
+        "max": 5.0,
+        "skew": -0.507397,
+        "outlier_count": 0,
+        "infinite_count": null,
+        "top_values": null,
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "payment_method",
+        "inferred_type": "categorical",
+        "dtype": "object",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 4,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "Card",
+            "count": 2780
+          },
+          {
+            "value": "PayPal",
+            "count": 1070
+          },
+          {
+            "value": "Apple Pay",
+            "count": 746
+          },
+          {
+            "value": "Bank Transfer",
+            "count": 404
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      },
+      {
+        "name": "gift_wrap",
+        "inferred_type": "boolean",
+        "dtype": "bool",
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "unique_count": 2,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "p25": null,
+        "median": null,
+        "p75": null,
+        "max": null,
+        "skew": null,
+        "outlier_count": null,
+        "infinite_count": null,
+        "top_values": [
+          {
+            "value": "False",
+            "count": 4380
+          },
+          {
+            "value": "True",
+            "count": 620
+          }
+        ],
+        "min_date": null,
+        "max_date": null
+      }
+    ],
+    "correlation": {
+      "method": "pearson",
+      "columns": [
+        "customer_age",
+        "unit_price",
+        "units",
+        "discount_pct",
+        "revenue",
+        "cost",
+        "margin",
+        "shipping_days",
+        "rating"
+      ],
+      "matrix": [
+        [
+          1.0,
+          0.003,
+          -0.029,
+          -0.0001,
+          -0.0124,
+          -0.0088,
+          -0.0202,
+          0.0053,
+          0.024
+        ],
+        [
+          0.003,
+          1.0,
+          -0.0042,
+          0.0111,
+          0.7213,
+          0.7553,
+          0.5249,
+          0.0274,
+          -0.0392
+        ],
+        [
+          -0.029,
+          -0.0042,
+          1.0,
+          -0.0109,
+          0.5152,
+          0.4643,
+          0.5751,
+          0.0149,
+          -0.0131
+        ],
+        [
+          -0.0001,
+          0.0111,
+          -0.0109,
+          1.0,
+          -0.0999,
+          -0.0035,
+          -0.3417,
+          -0.0014,
+          0.0337
+        ],
+        [
+          -0.0124,
+          0.7213,
+          0.5152,
+          -0.0999,
+          1.0,
+          0.9855,
+          0.892,
+          0.0272,
+          -0.0401
+        ],
+        [
+          -0.0088,
+          0.7553,
+          0.4643,
+          -0.0035,
+          0.9855,
+          1.0,
+          0.8023,
+          0.0251,
+          -0.0375
+        ],
+        [
+          -0.0202,
+          0.5249,
+          0.5751,
+          -0.3417,
+          0.892,
+          0.8023,
+          1.0,
+          0.0289,
+          -0.0411
+        ],
+        [
+          0.0053,
+          0.0274,
+          0.0149,
+          -0.0014,
+          0.0272,
+          0.0251,
+          0.0289,
+          1.0,
+          -0.6322
+        ],
+        [
+          0.024,
+          -0.0392,
+          -0.0131,
+          0.0337,
+          -0.0401,
+          -0.0375,
+          -0.0411,
+          -0.6322,
+          1.0
+        ]
+      ]
+    },
+    "top_correlations": [
+      {
+        "a": "revenue",
+        "b": "cost",
+        "r": 0.9855
+      },
+      {
+        "a": "revenue",
+        "b": "margin",
+        "r": 0.892
+      },
+      {
+        "a": "cost",
+        "b": "margin",
+        "r": 0.8023
+      },
+      {
+        "a": "unit_price",
+        "b": "cost",
+        "r": 0.7553
+      },
+      {
+        "a": "unit_price",
+        "b": "revenue",
+        "r": 0.7213
+      },
+      {
+        "a": "shipping_days",
+        "b": "rating",
+        "r": -0.6322
+      },
+      {
+        "a": "units",
+        "b": "margin",
+        "r": 0.5751
+      },
+      {
+        "a": "unit_price",
+        "b": "margin",
+        "r": 0.5249
+      },
+      {
+        "a": "units",
+        "b": "revenue",
+        "r": 0.5152
+      }
+    ],
+    "warnings": [
+      "'customer_id' is high-cardinality (761 distinct values)."
+    ]
+  },
+  "roles": {
+    "time": "order_date",
+    "measures": [
+      "customer_age",
+      "unit_price",
+      "units",
+      "discount_pct",
+      "revenue",
+      "cost",
+      "margin",
+      "shipping_days",
+      "rating"
+    ],
+    "dimensions": [
+      "customer_segment",
+      "is_first_order",
+      "channel",
+      "device",
+      "region",
+      "product_category",
+      "shipping_method",
+      "returned",
+      "payment_method",
+      "gift_wrap"
+    ],
+    "binaries": [
+      "is_first_order",
+      "returned",
+      "gift_wrap"
+    ],
+    "entity": "customer_id",
+    "value_measure": "revenue",
+    "targets": [
+      "returned",
+      "margin"
+    ]
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "kind": "segment",
+      "title": "returned by channel: Social stands out",
+      "summary": "returned rate is highest for channel = Social at 17.6% and lowest for Paid Search at 6.3%, versus 9.4% overall (2.8× gap).",
+      "headline": "17.6% vs 6.3%",
+      "target": "returned",
+      "dimension": "channel",
+      "agg": "rate",
+      "effect": {
+        "name": "rate ratio",
+        "value": 2.7857,
+        "strength": "strong"
+      },
+      "p_value": 6.35e-17,
+      "q_value": 2.9e-16,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "Social",
+          "Affiliate",
+          "Email",
+          "Organic Search",
+          "Direct",
+          "Paid Search"
+        ],
+        "values": [
+          17.5676,
+          11.4355,
+          8.2173,
+          7.7435,
+          7.5846,
+          6.3063
+        ],
+        "value_format": "percent",
+        "reference": 9.4,
+        "reference_label": "overall",
+        "counts": [
+          814,
+          411,
+          718,
+          1201,
+          857,
+          999
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 1.95,
+      "facts": {
+        "top": "Social",
+        "bottom": "Paid Search",
+        "top_value": 17.5676,
+        "bottom_value": 6.3063,
+        "overall": 9.4
+      }
+    },
+    {
+      "id": "F2",
+      "kind": "bins",
+      "title": "returned falls across rating",
+      "summary": "returned rate falls across rating: 33.8% at rating 2 versus 2.1% at rating 5.",
+      "headline": "16.5×",
+      "target": "returned",
+      "dimension": "rating",
+      "agg": "rate",
+      "effect": {
+        "name": "rate ratio",
+        "value": 16.4615,
+        "strength": "strong"
+      },
+      "p_value": 1.5e-43,
+      "q_value": 7.34e-43,
+      "n": 3262,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "values": [
+          33.8462,
+          17.1631,
+          7.9882,
+          2.0561
+        ],
+        "value_format": "percent",
+        "reference": 9.1662,
+        "reference_label": "overall",
+        "counts": [
+          130,
+          705,
+          1352,
+          1070
+        ]
+      },
+      "caveats": [
+        "rating is missing for 1,738 rows, which are excluded."
+      ],
+      "filter": null,
+      "source": "battery",
+      "score": 1.95,
+      "facts": {
+        "first_band": "2",
+        "last_band": "5",
+        "first_value": 33.8462,
+        "last_value": 2.0561,
+        "shape": "decreasing"
+      }
+    },
+    {
+      "id": "F3",
+      "kind": "bins",
+      "title": "margin rises across units",
+      "summary": "Average margin rises across units: 25.24 at units 1 versus 188 at units 8+.",
+      "headline": "+646%",
+      "target": "margin",
+      "dimension": "units",
+      "agg": "mean",
+      "effect": {
+        "name": "rate ratio",
+        "value": 7.4581,
+        "strength": "strong"
+      },
+      "p_value": 0.0,
+      "q_value": 0.0,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8+"
+        ],
+        "values": [
+          25.2375,
+          48.9468,
+          77.1851,
+          103.5618,
+          137.2922,
+          145.1927,
+          164.3288,
+          188.2232
+        ],
+        "value_format": "number",
+        "reference": 54.5533,
+        "reference_label": "overall",
+        "counts": [
+          1791,
+          1717,
+          863,
+          364,
+          141,
+          62,
+          34,
+          28
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 1.65,
+      "facts": {
+        "first_band": "1",
+        "last_band": "8+",
+        "first_value": 25.2375,
+        "last_value": 188.2232,
+        "shape": "increasing"
+      }
+    },
+    {
+      "id": "F4",
+      "kind": "bins",
+      "title": "margin rises across unit_price",
+      "summary": "Average margin rises across unit_price: 28.12 at unit_price 15.16–41.09 versus 98.36 at unit_price 99.68–471.",
+      "headline": "+250%",
+      "target": "margin",
+      "dimension": "unit_price",
+      "agg": "mean",
+      "effect": {
+        "name": "rate ratio",
+        "value": 3.4974,
+        "strength": "strong"
+      },
+      "p_value": 0.0,
+      "q_value": 0.0,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "15.16–41.09",
+          "41.1–61.33",
+          "61.35–99.63",
+          "99.68–471"
+        ],
+        "values": [
+          28.1225,
+          39.0221,
+          52.7502,
+          98.3551
+        ],
+        "value_format": "number",
+        "reference": 54.5533,
+        "reference_label": "overall",
+        "counts": [
+          1250,
+          1250,
+          1251,
+          1249
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 1.65,
+      "facts": {
+        "first_band": "15.16–41.09",
+        "last_band": "99.68–471",
+        "first_value": 28.1225,
+        "last_value": 98.3551,
+        "shape": "increasing"
+      }
+    },
+    {
+      "id": "F5",
+      "kind": "bins",
+      "title": "margin falls across discount_pct",
+      "summary": "Average margin falls across discount_pct: 75.14 at discount_pct 0 versus 17.82 at discount_pct 30.",
+      "headline": "-76%",
+      "target": "margin",
+      "dimension": "discount_pct",
+      "agg": "mean",
+      "effect": {
+        "name": "rate ratio",
+        "value": 4.2167,
+        "strength": "strong"
+      },
+      "p_value": 2.01e-232,
+      "q_value": 2.29e-231,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "0",
+          "5",
+          "10",
+          "15",
+          "20",
+          "25",
+          "30"
+        ],
+        "values": [
+          75.1428,
+          64.4899,
+          54.0545,
+          48.8457,
+          34.7124,
+          24.8902,
+          17.8204
+        ],
+        "value_format": "number",
+        "reference": 54.5533,
+        "reference_label": "overall",
+        "counts": [
+          1619,
+          696,
+          797,
+          572,
+          507,
+          451,
+          358
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 1.65,
+      "facts": {
+        "first_band": "0",
+        "last_band": "30",
+        "first_value": 75.1428,
+        "last_value": 17.8204,
+        "shape": "decreasing"
+      }
+    },
+    {
+      "id": "F6",
+      "kind": "segment",
+      "title": "margin by product_category: Electronics stands out",
+      "summary": "Average margin is highest for product_category = Electronics (106) and lowest for Toys (30.88), versus 54.55 overall.",
+      "headline": "+95%",
+      "target": "margin",
+      "dimension": "product_category",
+      "agg": "mean",
+      "effect": {
+        "name": "epsilon squared",
+        "value": 0.1985,
+        "strength": "strong"
+      },
+      "p_value": 2.76e-212,
+      "q_value": 2.36e-211,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "Electronics",
+          "Home",
+          "Sports",
+          "Apparel",
+          "Beauty",
+          "Toys"
+        ],
+        "values": [
+          106.2603,
+          58.3221,
+          45.2416,
+          39.3934,
+          32.6069,
+          30.8753
+        ],
+        "value_format": "number",
+        "reference": 54.5533,
+        "reference_label": "overall",
+        "counts": [
+          941,
+          993,
+          670,
+          1104,
+          675,
+          617
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 1.5596,
+      "facts": {
+        "top": "Electronics",
+        "bottom": "Toys",
+        "top_value": 106.2603,
+        "bottom_value": 30.8753,
+        "overall": 54.5533
+      }
+    },
+    {
+      "id": "F7",
+      "kind": "concentration",
+      "title": "A few customer_id values drive most of revenue",
+      "summary": "The top 10% of customer_id (77 of 761) account for 59% of revenue; the top 20% for 74% (Gini 0.70).",
+      "headline": "59%",
+      "target": "revenue",
+      "dimension": "customer_id",
+      "agg": "sum",
+      "effect": {
+        "name": "top-20% share",
+        "value": 0.7365,
+        "strength": "strong"
+      },
+      "p_value": null,
+      "q_value": null,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "Top 10%",
+          "Top 20%",
+          "Top 50%"
+        ],
+        "values": [
+          59.09,
+          73.65,
+          92.43
+        ],
+        "value_format": "percent",
+        "reference": null,
+        "reference_label": null,
+        "counts": null
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 1.1331,
+      "facts": {
+        "top10_share": 0.5909,
+        "top20_share": 0.7365,
+        "gini": 0.6997
+      }
+    },
+    {
+      "id": "F8",
+      "kind": "drivers",
+      "title": "What moves with returned",
+      "summary": "Of 18 columns tested, 3 are significantly associated with returned; the strongest are rating, channel, product_category.",
+      "headline": "rating",
+      "target": "returned",
+      "dimension": null,
+      "agg": "association",
+      "effect": {
+        "name": "rank-biserial r",
+        "value": -0.4557,
+        "strength": "moderate"
+      },
+      "p_value": 1.5e-43,
+      "q_value": 7.34e-43,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "ranking",
+        "categories": [
+          "rating",
+          "channel",
+          "product_category"
+        ],
+        "values": [
+          0.4557,
+          0.1307,
+          0.0556
+        ],
+        "value_format": "correlation",
+        "reference": null,
+        "reference_label": null,
+        "counts": null
+      },
+      "caveats": [
+        "Associations, not causes: drivers can be correlated with each other."
+      ],
+      "filter": null,
+      "source": "battery",
+      "score": 1.0663,
+      "facts": {}
+    },
+    {
+      "id": "F9",
+      "kind": "drivers",
+      "title": "What moves with margin",
+      "summary": "Of 15 columns tested, 6 are significantly associated with margin; the strongest are units, unit_price, product_category.",
+      "headline": "units",
+      "target": "margin",
+      "dimension": null,
+      "agg": "association",
+      "effect": {
+        "name": "Spearman rho",
+        "value": 0.6478,
+        "strength": "strong"
+      },
+      "p_value": 0.0,
+      "q_value": 0.0,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "ranking",
+        "categories": [
+          "units",
+          "unit_price",
+          "product_category",
+          "discount_pct",
+          "customer_segment",
+          "rating"
+        ],
+        "values": [
+          0.6478,
+          0.5067,
+          0.4455,
+          0.4371,
+          0.2913,
+          0.0589
+        ],
+        "value_format": "correlation",
+        "reference": null,
+        "reference_label": null,
+        "counts": null
+      },
+      "caveats": [
+        "Associations, not causes: drivers can be correlated with each other.",
+        "Excluded as likely components or restatements of margin: cost, revenue."
+      ],
+      "filter": null,
+      "source": "battery",
+      "score": 0.99,
+      "facts": {}
+    },
+    {
+      "id": "F10",
+      "kind": "segment",
+      "title": "returned by product_category: Apparel stands out",
+      "summary": "returned rate is highest for product_category = Apparel at 12.2% and lowest for Toys at 7.1%, versus 9.4% overall (1.7× gap).",
+      "headline": "12.2% vs 7.1%",
+      "target": "returned",
+      "dimension": "product_category",
+      "agg": "rate",
+      "effect": {
+        "name": "rate ratio",
+        "value": 1.7147,
+        "strength": "moderate"
+      },
+      "p_value": 0.00859,
+      "q_value": 0.0317,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "Apparel",
+          "Beauty",
+          "Home",
+          "Sports",
+          "Electronics",
+          "Toys"
+        ],
+        "values": [
+          12.2283,
+          9.3333,
+          8.9627,
+          8.6567,
+          8.6079,
+          7.1313
+        ],
+        "value_format": "percent",
+        "reference": 9.4,
+        "reference_label": "overall",
+        "counts": [
+          1104,
+          675,
+          993,
+          670,
+          941,
+          617
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 0.9291,
+      "facts": {
+        "top": "Apparel",
+        "bottom": "Toys",
+        "top_value": 12.2283,
+        "bottom_value": 7.1313,
+        "overall": 9.4
+      }
+    },
+    {
+      "id": "F11",
+      "kind": "segment",
+      "title": "units by customer_segment: Enterprise stands out",
+      "summary": "Average units is highest for customer_segment = Enterprise (4.93) and lowest for Consumer (1.81), versus 2.17 overall.",
+      "headline": "+127%",
+      "target": "units",
+      "dimension": "customer_segment",
+      "agg": "mean",
+      "effect": {
+        "name": "epsilon squared",
+        "value": 0.1966,
+        "strength": "strong"
+      },
+      "p_value": 3.63e-214,
+      "q_value": 3.55e-213,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "Enterprise",
+          "Small Business",
+          "Consumer"
+        ],
+        "values": [
+          4.9286,
+          2.7749,
+          1.8076
+        ],
+        "value_format": "number",
+        "reference": 2.1676,
+        "reference_label": "overall",
+        "counts": [
+          238,
+          1093,
+          3669
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 0.9,
+      "facts": {
+        "top": "Enterprise",
+        "bottom": "Consumer",
+        "top_value": 4.9286,
+        "bottom_value": 1.8076,
+        "overall": 2.1676
+      }
+    },
+    {
+      "id": "F12",
+      "kind": "segment",
+      "title": "rating by region: West stands out",
+      "summary": "Average rating is highest for region = South (4.24) and lowest for West (3.42), versus 4.03 overall.",
+      "headline": "-15%",
+      "target": "rating",
+      "dimension": "region",
+      "agg": "mean",
+      "effect": {
+        "name": "epsilon squared",
+        "value": 0.1472,
+        "strength": "strong"
+      },
+      "p_value": 1.1e-103,
+      "q_value": 7.18e-103,
+      "n": 3262,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "South",
+          "East",
+          "North",
+          "West"
+        ],
+        "values": [
+          4.2397,
+          4.2066,
+          4.1909,
+          3.4185
+        ],
+        "value_format": "number",
+        "reference": 4.0276,
+        "reference_label": "overall",
+        "counts": [
+          751,
+          881,
+          875,
+          755
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 0.85,
+      "facts": {
+        "top": "South",
+        "bottom": "West",
+        "top_value": 4.2397,
+        "bottom_value": 3.4185,
+        "overall": 4.0276
+      }
+    },
+    {
+      "id": "F13",
+      "kind": "bins",
+      "title": "rating falls across shipping_days",
+      "summary": "Average rating falls across shipping_days: 4.85 at shipping_days 1 versus 2.97 at shipping_days 8+.",
+      "headline": "-39%",
+      "target": "rating",
+      "dimension": "shipping_days",
+      "agg": "mean",
+      "effect": {
+        "name": "Spearman rho",
+        "value": -0.6213,
+        "strength": "strong"
+      },
+      "p_value": 0.0,
+      "q_value": 0.0,
+      "n": 3262,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8+"
+        ],
+        "values": [
+          4.8462,
+          4.7186,
+          4.5152,
+          4.2166,
+          3.9267,
+          3.6765,
+          3.4247,
+          2.9652
+        ],
+        "value_format": "number",
+        "reference": 4.0276,
+        "reference_label": "overall",
+        "counts": [
+          182,
+          199,
+          658,
+          614,
+          559,
+          442,
+          292,
+          316
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 0.85,
+      "facts": {
+        "first_band": "1",
+        "last_band": "8+",
+        "first_value": 4.8462,
+        "last_value": 2.9652,
+        "shape": "decreasing"
+      }
+    },
+    {
+      "id": "F14",
+      "kind": "trend",
+      "title": "Record volume peaks in Nov–Dec",
+      "summary": "Record volume is seasonal: Nov–Dec run at 1.8× the average month. Record volume rose +92% from the first to the last months.",
+      "headline": "1.8× in Nov–Dec",
+      "target": "Record volume",
+      "dimension": "order_date",
+      "agg": "count",
+      "effect": {
+        "name": "seasonal ratio",
+        "value": 2.5188,
+        "strength": "strong"
+      },
+      "p_value": 1.94e-121,
+      "q_value": 1.56e-120,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "line",
+        "categories": [
+          "2024-01",
+          "2024-02",
+          "2024-03",
+          "2024-04",
+          "2024-05",
+          "2024-06",
+          "2024-07",
+          "2024-08",
+          "2024-09",
+          "2024-10",
+          "2024-11",
+          "2024-12",
+          "2025-01",
+          "2025-02",
+          "2025-03",
+          "2025-04",
+          "2025-05",
+          "2025-06",
+          "2025-07",
+          "2025-08",
+          "2025-09",
+          "2025-10",
+          "2025-11",
+          "2025-12"
+        ],
+        "values": [
+          166.0,
+          163.0,
+          163.0,
+          171.0,
+          201.0,
+          161.0,
+          171.0,
+          178.0,
+          189.0,
+          215.0,
+          350.0,
+          376.0,
+          157.0,
+          130.0,
+          169.0,
+          167.0,
+          200.0,
+          185.0,
+          164.0,
+          188.0,
+          192.0,
+          210.0,
+          372.0,
+          362.0
+        ],
+        "value_format": "number",
+        "reference": 208.3333,
+        "reference_label": "average month",
+        "counts": null
+      },
+      "caveats": [
+        "Seasonality is estimated from only two years of data."
+      ],
+      "filter": null,
+      "source": "battery",
+      "score": 0.8,
+      "facts": {
+        "change": "+92%",
+        "start_value": 164.0,
+        "end_value": 314.6667,
+        "peak_months": [
+          "Nov",
+          "Dec"
+        ]
+      }
+    },
+    {
+      "id": "F15",
+      "kind": "segment",
+      "title": "margin by customer_segment: Enterprise stands out",
+      "summary": "Average margin is highest for customer_segment = Enterprise (120) and lowest for Consumer (45.93), versus 54.55 overall.",
+      "headline": "+120%",
+      "target": "margin",
+      "dimension": "customer_segment",
+      "agg": "mean",
+      "effect": {
+        "name": "epsilon squared",
+        "value": 0.0849,
+        "strength": "moderate"
+      },
+      "p_value": 7.67e-93,
+      "q_value": 4.2e-92,
+      "n": 5000,
+      "significant": true,
+      "chart": {
+        "kind": "bars",
+        "categories": [
+          "Enterprise",
+          "Small Business",
+          "Consumer"
+        ],
+        "values": [
+          120.1181,
+          69.2336,
+          45.927
+        ],
+        "value_format": "number",
+        "reference": 54.5533,
+        "reference_label": "overall",
+        "counts": [
+          238,
+          1093,
+          3669
+        ]
+      },
+      "caveats": [],
+      "filter": null,
+      "source": "battery",
+      "score": 0.6671,
+      "facts": {
+        "top": "Enterprise",
+        "bottom": "Consumer",
+        "top_value": 120.1181,
+        "bottom_value": 45.927,
+        "overall": 54.5533
+      }
+    }
+  ],
+  "insights": {
+    "executive_summary": "[Mock analysis] returned rate is highest for channel = Social at 17.6% and lowest for Paid Search at 6.3%, versus 9.4% overall (2.8× gap). returned rate falls across rating: 33.8% at rating 2 versus 2.1% at rating 5. Average margin rises across units: 25.24 at units 1 versus 188 at units 8+.",
+    "key_findings": [
+      {
+        "title": "returned by channel: Social stands out",
+        "detail": "returned rate is highest for channel = Social at 17.6% and lowest for Paid Search at 6.3%, versus 9.4% overall (2.8× gap).",
+        "finding_ids": [
+          "F1"
+        ]
+      },
+      {
+        "title": "returned falls across rating",
+        "detail": "returned rate falls across rating: 33.8% at rating 2 versus 2.1% at rating 5.",
+        "finding_ids": [
+          "F2"
+        ]
+      },
+      {
+        "title": "margin rises across units",
+        "detail": "Average margin rises across units: 25.24 at units 1 versus 188 at units 8+.",
+        "finding_ids": [
+          "F3"
+        ]
+      },
+      {
+        "title": "margin rises across unit_price",
+        "detail": "Average margin rises across unit_price: 28.12 at unit_price 15.16–41.09 versus 98.36 at unit_price 99.68–471.",
+        "finding_ids": [
+          "F4"
+        ]
+      },
+      {
+        "title": "margin falls across discount_pct",
+        "detail": "Average margin falls across discount_pct: 75.14 at discount_pct 0 versus 17.82 at discount_pct 30.",
+        "finding_ids": [
+          "F5"
+        ]
+      }
+    ],
+    "questions_answered": [
+      {
+        "question": "What is hurting our margin, and where are returns coming from?",
+        "answer": "Of 18 columns tested, 3 are significantly associated with returned; the strongest are rating, channel, product_category. returned rate is highest for channel = Social at 17.6% and lowest for Paid Search at 6.3%, versus 9.4% overall (2.8× gap). returned rate falls across rating: 33.8% at rating 2 versus 2.1% at rating 5.",
+        "finding_ids": [
+          "F8",
+          "F1",
+          "F2"
+        ],
+        "confidence": "medium"
+      }
+    ],
+    "open_questions": [
+      {
+        "question": "Does the channel effect on returned hold within each segment?",
+        "why_it_matters": "Confounding between segments can create or hide an effect."
+      },
+      {
+        "question": "Does the rating effect on returned hold within each segment?",
+        "why_it_matters": "Confounding between segments can create or hide an effect."
+      }
+    ],
+    "hypotheses": [
+      {
+        "statement": "channel influences returned.",
+        "rationale": "returned rate is highest for channel = Social at 17.6% and lowest for Paid Search at 6.3%, versus 9.4% overall (2.8× gap).",
+        "test": "Run a controlled comparison (or A/B test) varying channel and measure returned.",
+        "finding_ids": [
+          "F1"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "statement": "rating influences returned.",
+        "rationale": "returned rate falls across rating: 33.8% at rating 2 versus 2.1% at rating 5.",
+        "test": "Run a controlled comparison (or A/B test) varying rating and measure returned.",
+        "finding_ids": [
+          "F2"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "statement": "units influences margin.",
+        "rationale": "Average margin rises across units: 25.24 at units 1 versus 188 at units 8+.",
+        "test": "Run a controlled comparison (or A/B test) varying units and measure margin.",
+        "finding_ids": [
+          "F3"
+        ],
+        "confidence": "medium"
+      }
+    ],
+    "recommended_actions": [
+      "Investigate: returned by channel: Social stands out.",
+      "Investigate: returned falls across rating.",
+      "Investigate: margin rises across units."
+    ],
+    "data_quality_notes": [
+      "'customer_id' is high-cardinality (761 distinct values)."
+    ],
+    "slides": [
+      {
+        "layout": "title",
+        "title": "What drives returned",
+        "subtitle": "[Mock analysis] What is hurting our margin, and where are returns coming from?"
+      },
+      {
+        "layout": "executive_summary",
+        "headline": "returned rate is highest for channel = Social at 17.6% and lowest for Paid Search at 6.3%, versus 9.4% overall (2.8× gap).",
+        "takeaways": [
+          {
+            "title": "returned by channel: Social stands out",
+            "text": "returned rate is highest for channel = Social at 17.6% and lowest for Paid Search at 6.3%, versus 9.4% overall (2.8× gap)."
+          },
+          {
+            "title": "returned falls across rating",
+            "text": "returned rate falls across rating: 33.8% at rating 2 versus 2.1% at rating 5."
+          },
+          {
+            "title": "margin rises across units",
+            "text": "Average margin rises across units: 25.24 at units 1 versus 188 at units 8+."
+          }
+        ]
+      },
+      {
+        "layout": "kpi_cards",
+        "title": "The numbers that matter",
+        "kpis": [
+          {
+            "label": "returned by channel",
+            "metric": {
+              "metric": "finding",
+              "column": null,
+              "finding_id": "F1"
+            }
+          },
+          {
+            "label": "returned by rating",
+            "metric": {
+              "metric": "finding",
+              "column": null,
+              "finding_id": "F2"
+            }
+          },
+          {
+            "label": "margin by units",
+            "metric": {
+              "metric": "finding",
+              "column": null,
+              "finding_id": "F3"
+            }
+          },
+          {
+            "label": "margin by unit_price",
+            "metric": {
+              "metric": "finding",
+              "column": null,
+              "finding_id": "F4"
+            }
+          }
+        ]
+      },
+      {
+        "layout": "chart_insight",
+        "title": "returned by channel: Social stands out",
+        "bullets": [
+          "returned rate is highest for channel = Social at 17.6% and lowest for Paid Search at 6.3%, versus 9.4% overall (2.8× gap)."
+        ],
+        "chart": {
+          "chart": "finding",
+          "column": null,
+          "finding_id": "F1"
+        }
+      },
+      {
+        "layout": "chart_insight",
+        "title": "returned falls across rating",
+        "bullets": [
+          "returned rate falls across rating: 33.8% at rating 2 versus 2.1% at rating 5.",
+          "rating is missing for 1,738 rows, which are excluded."
+        ],
+        "chart": {
+          "chart": "finding",
+          "column": null,
+          "finding_id": "F2"
+        }
+      },
+      {
+        "layout": "chart_insight",
+        "title": "margin rises across units",
+        "bullets": [
+          "Average margin rises across units: 25.24 at units 1 versus 188 at units 8+."
+        ],
+        "chart": {
+          "chart": "finding",
+          "column": null,
+          "finding_id": "F3"
+        }
+      },
+      {
+        "layout": "hypotheses",
+        "title": "What to test next",
+        "items": [
+          {
+            "statement": "channel influences returned.",
+            "test": "Run a controlled comparison (or A/B test) varying channel and measure returned.",
+            "confidence": "medium"
+          },
+          {
+            "statement": "rating influences returned.",
+            "test": "Run a controlled comparison (or A/B test) varying rating and measure returned.",
+            "confidence": "medium"
+          },
+          {
+            "statement": "units influences margin.",
+            "test": "Run a controlled comparison (or A/B test) varying units and measure margin.",
+            "confidence": "medium"
+          }
+        ]
+      },
+      {
+        "layout": "next_steps",
+        "title": "Recommended next steps",
+        "steps": [
+          "Act on: returned by channel: Social stands out.",
+          "Act on: returned falls across rating.",
+          "Act on: margin rises across units."
+        ]
+      }
+    ]
+  },
+  "grounding": {
+    "checked": 62,
+    "unverified": []
+  },
+  "analyst": "mock",
+  "analyst_note": null,
+  "usage": null,
+  "deck": null,
+  "presentation": null,
+  "error": {
+    "stage": "generate_deck",
+    "code": "DECK_RENDER_ERROR",
+    "message": "The slide deck could not be rendered."
+  }
+}

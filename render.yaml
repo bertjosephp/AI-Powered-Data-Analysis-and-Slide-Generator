@@ -1,0 +1,35 @@
+# Render Blueprint for the API. See docs/deployment.md.
+# Deploys are triggered by .github/workflows/deploy.yml once CI passes on main.
+services:
+  - type: web
+    name: slidegen-api
+    runtime: docker
+    rootDir: apps/api
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /api/v1/health
+    autoDeploy: false
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false # entered in the Render dashboard, never committed
+      - key: CORS_ORIGINS
+        sync: false # the Vercel production URL, e.g. https://slidegen.vercel.app
+      - key: CORS_ORIGIN_REGEX
+        sync: false # optional, lets Vercel preview deploys call the API
+      - key: MOCK_EXTERNAL
+        value: "false"
+      - key: LLM_MODEL
+        value: claude-sonnet-5
+      # Public-demo protection: past these limits, runs use the offline analyst.
+      - key: DEMO_RUNS_PER_HOUR
+        value: "3"
+      - key: DAILY_BUDGET_USD
+        value: "3"
+      - key: MAX_CONCURRENT_ANALYSES
+        value: "2"
+      # Sized for the free instance's 512 MB of memory.
+      - key: MAX_UPLOAD_MB
+        value: "10"
+      - key: PROFILE_SAMPLE_ROWS
+        value: "50000"

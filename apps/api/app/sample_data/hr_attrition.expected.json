@@ -1,0 +1,52 @@
+{
+  "name": "hr_attrition",
+  "rows": 2000,
+  "columns": 18,
+  "title": "Employee attrition",
+  "description": "One snapshot of 2,000 employees: department, pay versus band, overtime, satisfaction, commute and who left.",
+  "suggested_question": "Why are people leaving, and which teams are most at risk?",
+  "suggested_target": "left_company",
+  "planted": [
+    {
+      "id": "overtime",
+      "kind": "segment",
+      "target": "left_company",
+      "dimension": "overtime",
+      "top": "True"
+    },
+    {
+      "id": "sales_dept",
+      "kind": "segment",
+      "target": "left_company",
+      "dimension": "department",
+      "top": "Sales"
+    },
+    {
+      "id": "satisfaction",
+      "kind": "bins",
+      "target": "left_company",
+      "driver": "satisfaction_score",
+      "direction": "decreasing"
+    },
+    {
+      "id": "commute",
+      "kind": "bins",
+      "target": "left_company",
+      "driver": "commute_km",
+      "direction": "increasing"
+    },
+    {
+      "id": "underpaid",
+      "kind": "bins",
+      "target": "left_company",
+      "driver": "salary_vs_band_pct",
+      "direction": "decreasing"
+    }
+  ],
+  "noise_columns": [
+    "gender",
+    "education",
+    "training_hours_last_year",
+    "performance_rating"
+  ]
+}

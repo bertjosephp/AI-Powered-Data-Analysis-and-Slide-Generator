@@ -1,0 +1,67 @@
+{
+  "name": "ecommerce_orders",
+  "rows": 5000,
+  "columns": 22,
+  "title": "E-commerce orders",
+  "description": "Two years of online orders: channels, regions, products, discounts, shipping, returns and ratings.",
+  "suggested_question": "What is hurting our margin, and where are returns coming from?",
+  "suggested_target": "margin",
+  "planted": [
+    {
+      "id": "social_returns",
+      "kind": "segment",
+      "target": "returned",
+      "dimension": "channel",
+      "top": "Social"
+    },
+    {
+      "id": "discount_margin",
+      "kind": "bins",
+      "target": "margin",
+      "driver": "discount_pct",
+      "direction": "decreasing"
+    },
+    {
+      "id": "west_ratings",
+      "kind": "segment",
+      "target": "rating",
+      "dimension": "region",
+      "bottom": "West"
+    },
+    {
+      "id": "west_shipping",
+      "kind": "segment",
+      "target": "shipping_days",
+      "dimension": "region",
+      "top": "West",
+      "tier": "secondary"
+    },
+    {
+      "id": "q4_revenue",
+      "kind": "seasonality",
+      "target": "revenue",
+      "peak_months": [
+        11,
+        12
+      ]
+    },
+    {
+      "id": "customer_concentration",
+      "kind": "concentration",
+      "target": "revenue",
+      "entity": "customer_id",
+      "top10_share_min": 0.35
+    },
+    {
+      "id": "discount_units_null",
+      "kind": "null",
+      "target": "units",
+      "driver": "discount_pct"
+    }
+  ],
+  "noise_columns": [
+    "device",
+    "payment_method",
+    "gift_wrap"
+  ]
+}
