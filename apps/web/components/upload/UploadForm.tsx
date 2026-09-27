@@ -9,6 +9,7 @@ import {
   Loader2,
   Repeat,
   ShoppingCart,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,7 @@ import { useState } from "react";
 import { ApiError, createJob, fetchSampleFile, listSamples } from "@/lib/api/client";
 import { type AnalysisOptions, DEFAULT_OPTIONS, type Sample } from "@/lib/api/types";
 import { readCsvHeader } from "@/lib/csvHeader";
+import { useServerStatus } from "@/lib/hooks/useServerStatus";
 import { cn } from "@/lib/utils";
 
 import { FileDropzone } from "./FileDropzone";
@@ -31,12 +33,22 @@ export function UploadForm() {
   const [clientError, setClientError] = useState<string | null>(null);
   const [columns, setColumns] = useState<string[] | null>(null);
   const [activeSample, setActiveSample] = useState<string | null>(null);
-  const samples = useQuery({ queryKey: ["samples"], queryFn: listSamples, staleTime: Infinity });
+  const server = useServerStatus();
+  const serverReady = server.state === "ready";
+  const samples = useQuery({
+    queryKey: ["samples"],
+    queryFn: listSamples,
+    staleTime: Infinity,
+    enabled: serverReady,
+  });
 
   const mutation = useMutation({
     mutationFn: ({ file, options }: { file: File; options: AnalysisOptions }) =>
       createJob(file, options),
-    onSuccess: ({ job_id }) => router.push(`/jobs/${job_id}`),
+    onSuccess: ({ job_id }) => {
+      server.refresh(); // this run used one of the visitor's demo analyses
+      router.push(`/jobs/${job_id}`);
+    },
   });
 
   // Once the job is created we're navigating away; keep the form locked meanwhile.
@@ -99,6 +111,16 @@ export function UploadForm() {
             setClientError(message);
           }}
         />
+        {!samples.data && (samples.isPending || !serverReady) && (
+          <div className="mt-4" aria-hidden data-testid="sample-skeletons">
+            <div className="h-3 w-40 animate-pulse rounded bg-surface-muted" />
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-[3.75rem] animate-pulse rounded-xl bg-surface-muted" />
+              ))}
+            </div>
+          </div>
+        )}
         {samples.data && samples.data.length > 0 && (
           <div className="mt-4">
             <p className="text-xs font-medium tracking-wide text-muted uppercase">
@@ -236,14 +258,20 @@ export function UploadForm() {
         </p>
       )}
 
+      <DemoHint />
+
       <button
         type="submit"
-        disabled={!file || busy || options.audience.trim() === ""}
+        disabled={!file || busy || !serverReady || options.audience.trim() === ""}
         className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 font-medium text-white shadow-sm transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
       >
         {busy ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden /> Uploading…
+          </>
+        ) : !serverReady ? (
+          <>
+            <Loader2 className="size-4 animate-spin" aria-hidden /> Waiting for server…
           </>
         ) : (
           <>
@@ -252,6 +280,22 @@ export function UploadForm() {
         )}
       </button>
     </form>
+  );
+}
+
+/** Tells visitors of the hosted demo how many Claude-powered runs they have left. */
+function DemoHint() {
+  const demo = useServerStatus().health?.demo;
+  if (!demo) return null;
+  const live = demo.claude_available && demo.runs_left_this_hour > 0;
+  const left = demo.runs_left_this_hour;
+  return (
+    <p className="mt-5 flex items-center gap-2 text-xs text-muted" data-testid="demo-hint">
+      <Sparkles className={cn("size-3.5 shrink-0", live && "text-accent")} aria-hidden />
+      {live
+        ? `Live demo · ${left} Claude ${left === 1 ? "analysis" : "analyses"} left this hour`
+        : "Live demo · Claude limit reached, so runs use the offline analyst for now"}
+    </p>
   );
 }
 

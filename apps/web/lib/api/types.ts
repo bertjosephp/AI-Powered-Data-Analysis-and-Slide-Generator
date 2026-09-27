@@ -230,6 +230,18 @@ export const JobStateSchema = z.object({
   findings: z.array(FindingSchema).nullish(),
   insights: InsightsSchema.nullish(),
   grounding: GroundingSchema.nullish(),
+  analyst: z.enum(["claude", "mock"]).default("mock"),
+  analyst_note: z.string().nullish(),
+  usage: z
+    .object({
+      calls: z.number(),
+      input_tokens: z.number(),
+      output_tokens: z.number(),
+      cache_read_tokens: z.number(),
+      cache_write_tokens: z.number(),
+      cost_usd: z.number(),
+    })
+    .nullish(),
   deck: z.array(SlideSchema).nullish(),
   presentation: PresentationSchema.nullish(),
   error: z.object({ stage: StageKeySchema.nullable(), code: z.string(), message: z.string() }).nullish(),
@@ -238,6 +250,19 @@ export const JobStateSchema = z.object({
 export const JobCreatedSchema = z.object({
   job_id: z.string(),
   status: JobStateSchema.shape.status,
+});
+
+export const HealthSchema = z.object({
+  status: z.string(),
+  mock_external: z.boolean(),
+  demo: z
+    .object({
+      runs_per_hour: z.number(),
+      runs_left_this_hour: z.number(),
+      budget_remaining_usd: z.number(),
+      claude_available: z.boolean(),
+    })
+    .nullish(),
 });
 
 export const SampleSchema = z.object({
@@ -261,6 +286,7 @@ export type Insights = z.infer<typeof InsightsSchema>;
 export type Finding = z.infer<typeof FindingSchema>;
 export type Grounding = z.infer<typeof GroundingSchema>;
 export type Sample = z.infer<typeof SampleSchema>;
+export type Health = z.infer<typeof HealthSchema>;
 export type Presentation = z.infer<typeof PresentationSchema>;
 export type Slide = z.infer<typeof SlideSchema>;
 export type Chart = z.infer<typeof ChartSchema>;

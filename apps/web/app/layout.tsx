@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 
+import { ServerWakeBanner } from "@/components/ServerWakeBanner";
+
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -17,31 +19,34 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
-        <header className="sticky top-0 z-40 border-b border-border/70 bg-background/75 backdrop-blur-md">
-          <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-            <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
-              <LogoMark />
-              Data to Deck
-            </Link>
-            <nav className="flex items-center gap-1 text-sm">
-              <Link
-                href="/"
-                className="rounded-lg px-3 py-1.5 font-medium text-muted transition hover:bg-surface-muted hover:text-foreground"
-              >
-                New analysis
+        <Providers>
+          <header className="sticky top-0 z-40 border-b border-border/70 bg-background/75 backdrop-blur-md">
+            <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+              <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
+                <LogoMark />
+                Data to Deck
               </Link>
-            </nav>
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-          <Providers>{children}</Providers>
-        </main>
-        <footer className="border-t border-border/70">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-xs text-muted sm:px-6">
-            <span>Statistics by pandas &amp; SciPy · narrative by Claude · decks by python-pptx</span>
-            <span>Your rows never leave the server.</span>
-          </div>
-        </footer>
+              <nav className="flex items-center gap-1 text-sm">
+                <Link
+                  href="/"
+                  className="rounded-lg px-3 py-1.5 font-medium text-muted transition hover:bg-surface-muted hover:text-foreground"
+                >
+                  New analysis
+                </Link>
+              </nav>
+            </div>
+            <ServerWakeBanner />
+          </header>
+          <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+            {children}
+          </main>
+          <footer className="border-t border-border/70">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-xs text-muted sm:px-6">
+              <span>Statistics by pandas &amp; SciPy · narrative by Claude · decks by python-pptx</span>
+              <span>Your rows never leave the server.</span>
+            </div>
+          </footer>
+        </Providers>
       </body>
     </html>
   );

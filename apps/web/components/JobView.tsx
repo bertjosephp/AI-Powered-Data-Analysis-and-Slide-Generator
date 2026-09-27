@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, FileSpreadsheet, WifiOff } from "lucide-react";
+import { AlertCircle, FileSpreadsheet, Info, Loader2, WifiOff } from "lucide-react";
 import Link from "next/link";
 
 import { ColumnTable } from "@/components/dataset/ColumnTable";
@@ -20,14 +20,27 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ApiError } from "@/lib/api/client";
 import type { JobState } from "@/lib/api/types";
 import { useJobPolling } from "@/lib/hooks/useJobPolling";
+import { useServerStatus } from "@/lib/hooks/useServerStatus";
 import { cn } from "@/lib/utils";
 
 type Props = { jobId: string; pollIntervalMs?: number };
 
 export function JobView({ jobId, pollIntervalMs }: Props) {
   const { data: job, error, isPending, failureCount } = useJobPolling(jobId, pollIntervalMs);
+  const waking = useServerStatus().state === "waking";
 
   if (isPending) return <JobSkeleton />;
+  if (!job && waking && !(error instanceof ApiError && error.status === 404)) {
+    return (
+      <div className="mx-auto max-w-md rounded-2xl border border-border bg-surface p-6 text-center shadow-card">
+        <Loader2 className="mx-auto size-8 animate-spin text-accent" aria-hidden />
+        <h1 className="mt-3 text-lg font-semibold">Waiting for the server to wake up</h1>
+        <p className="mt-1 text-sm text-muted">
+          This free demo server sleeps when idle. This page will load once it&apos;s back.
+        </p>
+      </div>
+    );
+  }
   if (!job) {
     const notFound = error instanceof ApiError && error.status === 404;
     return (
@@ -117,7 +130,18 @@ export function JobView({ jobId, pollIntervalMs }: Props) {
         {(error || failureCount > 0) && (
           <p className="flex items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning">
             <WifiOff className="size-4 shrink-0" aria-hidden />
-            Lost contact with the server. Showing the last known progress; retrying…
+            {waking
+              ? "The server is waking up. Showing the last known progress; retrying…"
+              : "Lost contact with the server. Showing the last known progress; retrying…"}
+          </p>
+        )}
+        {job.analyst_note && (
+          <p
+            className="flex items-start gap-2 rounded-lg bg-accent-soft px-3 py-2.5 text-sm text-accent"
+            data-testid="analyst-note"
+          >
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {job.analyst_note}
           </p>
         )}
         <ErrorPanel job={job} />
@@ -245,6 +269,10 @@ function JobSummary({ job }: { job: JobState }) {
             <dd className="truncate font-medium">{target}</dd>
           </div>
         )}
+        <div className="flex justify-between gap-3">
+          <dt className="text-muted">Analyst</dt>
+          <dd>{job.analyst === "claude" ? "Claude" : "Offline (rule-based)"}</dd>
+        </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted">Deck</dt>
           <dd>

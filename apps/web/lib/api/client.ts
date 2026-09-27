@@ -7,6 +7,8 @@ import {
   JobCreatedSchema,
   type JobState,
   JobStateSchema,
+  type Health,
+  HealthSchema,
   type Sample,
   SampleSchema,
 } from "./types";
@@ -70,6 +72,10 @@ export function retryJob(jobId: string): Promise<JobCreated> {
   return request(`/jobs/${encodeURIComponent(jobId)}/retry`, JobCreatedSchema, {
     method: "POST",
   });
+}
+
+export function getHealth(signal?: AbortSignal): Promise<Health> {
+  return request("/health", HealthSchema, { cache: "no-store", signal });
 }
 
 export function listSamples(): Promise<Sample[]> {
