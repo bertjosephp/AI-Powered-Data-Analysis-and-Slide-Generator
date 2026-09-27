@@ -3,26 +3,34 @@
 Two phases over one conversation:
   1. Explore: Claude reads the ranked findings and may call analysis tools
      (at most MAX_TOOL_CALLS, over at most MAX_ROUNDS turns).
-  2. Report: one structured-output call (tool_choice "none") returns Insights.
+  2. Report: two structured-output calls (tool_choice "none"): the written report,
+     then the slides. One schema covering both exceeds the API's grammar limit.
 The full assistant content (including thinking blocks) is appended every turn,
 and the static system prompt and the large first message carry cache breakpoints.
 """
 
 import logging
-from typing import Any
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 import anthropic
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from starlette.concurrency import run_in_threadpool
 
 from app.errors import AppError, ErrorCode
-from app.schemas.insights import Insights
+from app.schemas.insights import DeckPlan, Insights, Report
 from app.services.llm.context import AnalysisContext, AnalystOutput
-from app.services.llm.prompts import FINAL_INSTRUCTION, SYSTEM_PROMPT, build_user_prompt
+from app.services.llm.prompts import (
+    FINAL_INSTRUCTION,
+    SLIDES_INSTRUCTION,
+    SYSTEM_PROMPT,
+    build_user_prompt,
+)
 from app.services.llm.tools import TOOLS, ToolRunner
 from app.services.llm.usage import Usage
 
 log = logging.getLogger(__name__)
+T = TypeVar("T", bound=BaseModel)
 
 MAX_OUTPUT_TOKENS = 16_000
 EXPLORE_MAX_TOKENS = 8_000
@@ -111,20 +119,48 @@ class ClaudeAnalyst:
     async def _report(
         self, system: list[dict[str, Any]], messages: list[dict[str, Any]], *, tools_enabled: bool
     ) -> Insights:
-        final = [*messages]
-        if final[-1]["role"] == "user":
+        conversation = [*messages]
+        if conversation[-1]["role"] == "user":
             # Last turn was tool results: add the instruction to that same user turn.
-            final[-1] = {
+            conversation[-1] = {
                 "role": "user",
-                "content": [*final[-1]["content"], {"type": "text", "text": FINAL_INSTRUCTION}],
+                "content": [
+                    *conversation[-1]["content"],
+                    {"type": "text", "text": FINAL_INSTRUCTION},
+                ],
             }
         else:
-            final.append({"role": "user", "content": FINAL_INSTRUCTION})
+            conversation.append({"role": "user", "content": FINAL_INSTRUCTION})
         # Earlier tool_use blocks require the tools to be declared; "none" forbids new calls.
         tool_args: dict[str, Any] = (
             {"tools": TOOLS, "tool_choice": {"type": "none"}} if tools_enabled else {}
         )
 
+        report = await self._structured("report", system, conversation, Report, tool_args)
+        conversation += [
+            {"role": "assistant", "content": [{"type": "text", "text": report.model_dump_json()}]},
+            {"role": "user", "content": SLIDES_INSTRUCTION},
+        ]
+        deck = await self._structured(
+            "slides",
+            system,
+            conversation,
+            DeckPlan,
+            tool_args,
+            problem=lambda d: None if d.slides else "the deck had no slides",
+        )
+        return Insights(**dict(report), slides=deck.slides)
+
+    async def _structured(
+        self,
+        what: str,
+        system: list[dict[str, Any]],
+        messages: list[dict[str, Any]],
+        output: type[T],
+        tool_args: dict[str, Any],
+        problem: Callable[[T], str | None] = lambda _: None,
+    ) -> T:
+        """One structured-output call, retried once if the output is missing or unusable."""
         last_problem = "no attempts made"
         for attempt in range(1, REPORT_ATTEMPTS + 1):
             try:
@@ -133,29 +169,26 @@ class ClaudeAnalyst:
                     model=self._model,
                     max_tokens=MAX_OUTPUT_TOKENS,
                     system=system,
-                    messages=final,
-                    output_format=Insights,
+                    messages=messages,
+                    output_format=output,
                     **tool_args,
                 )
             except ValidationError as e:
                 last_problem = f"response failed schema validation: {e.error_count()} errors"
-                log.warning("Report attempt %d: %s", attempt, last_problem)
+                log.warning("%s attempt %d: %s", what, attempt, last_problem)
                 continue
             self._check_refusal(response)
-            insights: Insights | None = response.parsed_output
-            if insights is None:
+            parsed: T | None = response.parsed_output
+            if parsed is None:
                 last_problem = f"no structured output (stop_reason={response.stop_reason})"
-            elif not insights.slides:
-                last_problem = "the deck had no slides"
+            elif (issue := problem(parsed)) is not None:
+                last_problem = issue
             else:
-                usage = getattr(response, "usage", None)
-                if usage is not None:
-                    log.info("Report usage: %s", usage)
-                return insights
-            log.warning("Report attempt %d: %s", attempt, last_problem)
+                return parsed
+            log.warning("%s attempt %d: %s", what, attempt, last_problem)
         raise AppError(
             ErrorCode.LLM_SCHEMA_ERROR,
-            f"Could not get valid insights after {REPORT_ATTEMPTS} attempts: {last_problem}.",
+            f"Could not get valid {what} after {REPORT_ATTEMPTS} attempts: {last_problem}.",
         )
 
     @staticmethod

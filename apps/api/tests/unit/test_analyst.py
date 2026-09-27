@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from app.errors import AppError, ErrorCode
 from app.schemas.deck import ResolvedChartInsightSlide, ResolvedKpiSlide
-from app.schemas.insights import Insights
+from app.schemas.insights import DeckPlan, Insights, Report
 from app.schemas.options import AnalysisOptions
 from app.services.analysis.battery import BatteryResult, run_battery
 from app.services.deck.resolve import resolve_slides
@@ -68,15 +68,19 @@ def _turn(*blocks: SimpleNamespace, stop: str | None = None) -> SimpleNamespace:
     )
 
 
-def _report(insights: Insights | None, stop: str = "end_turn") -> SimpleNamespace:
-    return SimpleNamespace(parsed_output=insights, stop_reason=stop, content=[])
+def _report(parsed: Any, stop: str = "end_turn") -> SimpleNamespace:
+    return SimpleNamespace(parsed_output=parsed, stop_reason=stop, content=[])
 
 
 class FakeMessages:
+    """`reports` are outcomes for the structured calls. An Insights outcome serves both:
+    the report call gets its Report part, and the next slides call gets its slides."""
+
     def __init__(self, turns: list[Any], reports: list[Any]) -> None:
         self.turns, self.reports = turns, reports
         self.create_calls: list[dict[str, Any]] = []
         self.parse_calls: list[dict[str, Any]] = []
+        self._slides: list[Any] | None = None
 
     async def create(self, **kwargs: Any) -> Any:
         self.create_calls.append({**kwargs, "messages": list(kwargs["messages"])})
@@ -86,11 +90,22 @@ class FakeMessages:
         return outcome
 
     async def parse(self, **kwargs: Any) -> Any:
-        self.parse_calls.append(kwargs)
+        self.parse_calls.append({**kwargs, "messages": list(kwargs["messages"])})
+        fmt = kwargs["output_format"]
+        if fmt is DeckPlan and self._slides is not None:
+            slides, self._slides = self._slides, None
+            return _report(DeckPlan(slides=slides))
         outcome = self.reports.pop(0)
         if isinstance(outcome, Exception):
             raise outcome
-        return outcome
+        insights = outcome.parsed_output
+        if not isinstance(insights, Insights):
+            return outcome
+        if fmt is Report:
+            self._slides = insights.slides
+            report = Report(**{k: getattr(insights, k) for k in Report.model_fields})
+            return _report(report, outcome.stop_reason)
+        return _report(DeckPlan(slides=insights.slides), outcome.stop_reason)
 
 
 def _client(turns: list[Any], reports: list[Any]) -> SimpleNamespace:
@@ -133,11 +148,19 @@ async def test_explores_then_writes_a_structured_report(good_insights: Insights)
     assert '"id":"F1"' in prompt and "<dataset_profile>" in prompt
     assert "ACC-00001" not in prompt  # no raw rows
 
-    report = client.messages.parse_calls[0]
-    assert report["output_format"] is Insights
-    assert report["tool_choice"] == {"type": "none"}
-    assert report["messages"][-1] == {"role": "user", "content": report["messages"][-1]["content"]}
+    report, slides = client.messages.parse_calls
+    assert report["output_format"] is Report and slides["output_format"] is DeckPlan
+    assert report["tool_choice"] == slides["tool_choice"] == {"type": "none"}
+    assert report["messages"][-1]["role"] == "user"
     assert "final report" in str(report["messages"][-1]["content"])
+    # The slides call continues the same conversation, with the report as Claude's turn.
+    assert slides["messages"][: len(report["messages"])] == report["messages"]
+    written = slides["messages"][-2]
+    assert written["role"] == "assistant"
+    assert Report.model_validate_json(written["content"][0]["text"]) == Report(
+        **{k: getattr(good_insights, k) for k in Report.model_fields}
+    )
+    assert "slides" in str(slides["messages"][-1]["content"])
 
 
 async def test_tool_calls_run_on_the_dataset_and_become_findings(good_insights: Insights) -> None:
@@ -244,7 +267,7 @@ async def test_without_the_dataset_there_are_no_tools(good_insights: Insights) -
     out = await ClaudeAnalyst(client, "m").generate(_context(with_frame=False))
     assert out.insights == good_insights
     assert client.messages.create_calls == []
-    assert "tools" not in client.messages.parse_calls[0]
+    assert all("tools" not in call for call in client.messages.parse_calls)
     assert (
         "Follow-up tools: unavailable"
         in client.messages.parse_calls[0]["messages"][0]["content"][0]["text"]
@@ -254,15 +277,23 @@ async def test_without_the_dataset_there_are_no_tools(good_insights: Insights) -
 async def test_report_is_retried_once_on_invalid_output(good_insights: Insights) -> None:
     client = _client([], [_validation_error(), _report(good_insights)])
     out = await ClaudeAnalyst(client, "m").generate(_context(with_frame=False))
-    assert out.insights == good_insights and len(client.messages.parse_calls) == 2
+    assert out.insights == good_insights and len(client.messages.parse_calls) == 3
+
+
+async def test_slides_are_retried_when_the_deck_is_empty(good_insights: Insights) -> None:
+    empty = good_insights.model_copy(update={"slides": []})
+    client = _client([], [_report(empty), _report(good_insights)])
+    out = await ClaudeAnalyst(client, "m").generate(_context(with_frame=False))
+    assert out.insights == good_insights  # report from the first, slides from the retry
+    assert [c["output_format"] for c in client.messages.parse_calls] == [Report, DeckPlan, DeckPlan]
 
 
 async def test_gives_up_with_schema_error(good_insights: Insights) -> None:
     empty = good_insights.model_copy(update={"slides": []})
-    client = _client([], [_report(None, "max_tokens"), _report(empty)])
+    client = _client([], [_report(None, "max_tokens"), _report(empty), _report(empty)])
     with pytest.raises(AppError) as exc:
         await ClaudeAnalyst(client, "m").generate(_context(with_frame=False))
-    assert exc.value.code == ErrorCode.LLM_SCHEMA_ERROR
+    assert exc.value.code == ErrorCode.LLM_SCHEMA_ERROR and "slides" in exc.value.message
 
 
 async def test_refusal_during_exploration_stops() -> None:

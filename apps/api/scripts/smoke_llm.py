@@ -62,6 +62,15 @@ async def main(args: argparse.Namespace) -> None:
         f"{grounding.checked} numbers checked, {len(grounding.unverified)} unverified",
         file=sys.stderr,
     )
+    if output.usage is not None:
+        use = output.usage
+        cost = use.cost_usd(settings.llm_input_usd_per_mtok, settings.llm_output_usd_per_mtok)
+        print(
+            f"usage: {use.calls} calls, {use.input_tokens} input, "
+            f"{use.cache_read_tokens} cache read, {use.cache_write_tokens} cache write, "
+            f"{use.output_tokens} output = ${cost:.3f}",
+            file=sys.stderr,
+        )
     for u in grounding.unverified:
         print(f"  unverified {u.value} at {u.location}: {u.context}", file=sys.stderr)
 

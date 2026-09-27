@@ -63,7 +63,13 @@ usually more useful.
 
 FINAL_INSTRUCTION = (
     "Write the final report now as the structured output. Cite finding ids for every "
-    "claim, and use findings (including any from your follow-up calls) for the slides."
+    "claim. The slides come next, in a separate step."
+)
+
+SLIDES_INSTRUCTION = (
+    "Now write the slides as the structured output, following the slide rules in your "
+    "instructions. Build them from your report and the findings (including any from your "
+    "follow-up calls), and keep every claim consistent with the report."
 )
 
 

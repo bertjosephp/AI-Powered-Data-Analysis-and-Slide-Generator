@@ -40,7 +40,10 @@ class Hypothesis(BaseModel):
     confidence: Confidence
 
 
-class Insights(BaseModel):
+class Report(BaseModel):
+    """Everything but the slides. Claude writes this and the slides in two structured
+    calls, because one schema covering both exceeds the API's compiled-grammar limit."""
+
     executive_summary: str
     key_findings: list[KeyFinding]
     questions_answered: list[AnsweredQuestion]
@@ -48,6 +51,13 @@ class Insights(BaseModel):
     hypotheses: list[Hypothesis]
     recommended_actions: list[str]
     data_quality_notes: list[str]
+
+
+class DeckPlan(BaseModel):
+    slides: list[SlideSpec]
+
+
+class Insights(Report):
     slides: list[SlideSpec]
 
 
