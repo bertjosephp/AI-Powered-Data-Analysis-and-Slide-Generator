@@ -37,5 +37,7 @@ def test_cors_origin_regex_allows_preview_urls() -> None:
     with TestClient(create_app(settings)) as c:
         ok = c.get("/api/v1/health", headers={"Origin": "https://data-to-deck-git-pr-3.vercel.app"})
         bad = c.get("/api/v1/health", headers={"Origin": "https://evil.test"})
-    assert ok.headers.get("access-control-allow-origin") == "https://data-to-deck-git-pr-3.vercel.app"
+    assert (
+        ok.headers.get("access-control-allow-origin") == "https://data-to-deck-git-pr-3.vercel.app"
+    )
     assert "access-control-allow-origin" not in bad.headers
