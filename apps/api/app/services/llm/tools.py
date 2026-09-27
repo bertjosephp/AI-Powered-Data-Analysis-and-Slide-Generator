@@ -45,10 +45,12 @@ _WHERE: dict[str, Any] = {
 
 
 def _tool(name: str, description: str, properties: dict[str, Any]) -> ToolParam:
+    # Not strict: the report call already constrains output to the Insights schema, and
+    # strict tools on top of it exceed the API's compiled-grammar limit. Bad arguments
+    # come back to Claude as an error tool_result (see ToolRunner.run) and it retries.
     return {
         "name": name,
         "description": description,
-        "strict": True,
         "input_schema": {
             "type": "object",
             "properties": properties,

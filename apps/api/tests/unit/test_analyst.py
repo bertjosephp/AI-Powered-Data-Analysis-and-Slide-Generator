@@ -20,6 +20,7 @@ from app.services.ingestion.loader import load_dataset
 from app.services.llm.analyst import MAX_TOOL_CALLS, ClaudeAnalyst
 from app.services.llm.context import AnalysisContext
 from app.services.llm.mock import MockAnalyst
+from app.services.llm.tools import TOOLS, ToolRunner
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 DATA = Path(__file__).parents[2] / "app" / "sample_data"
@@ -189,6 +190,29 @@ async def test_bad_tool_arguments_come_back_as_errors(good_insights: Insights) -
     result = client.messages.create_calls[1]["messages"][-1]["content"][0]
     assert result["is_error"] is True and "Unknown metric" in result["content"]
     assert out.follow_ups == []
+
+
+def test_tools_are_not_strict() -> None:
+    # Strict tools plus the Insights output schema exceed the API's compiled-grammar
+    # limit ("The compiled grammar is too large"), failing every real report call.
+    assert not any(t.get("strict") for t in TOOLS)
+
+
+@pytest.mark.parametrize(
+    ("name", "args"),
+    [
+        ("compare_segments", {"metric": "churned"}),  # missing dimension
+        ("compare_segments", {"metric": "churned", "dimension": "plan", "where": "plan=Pro"}),
+        ("metric_by_bins", {"metric": "churned", "driver": "tenure_months", "bins": "four"}),
+        ("crosstab", {"dimension_a": "plan", "dimension_b": None}),
+        ("no_such_tool", {}),
+    ],
+)
+def test_malformed_tool_arguments_become_error_results(name: str, args: dict[str, Any]) -> None:
+    b = _battery()
+    runner = ToolRunner(b.frame, b.roles, first_id=100)
+    content, is_error = runner.run(name, args)
+    assert is_error and content and runner.findings == []
 
 
 async def test_tool_budget_is_enforced(good_insights: Insights) -> None:
