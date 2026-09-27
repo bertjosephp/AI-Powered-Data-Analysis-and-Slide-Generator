@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/bertjosephp/AI-Powered-Data-Analysis-and-Slide-Generator/actions/workflows/ci.yml/badge.svg)](https://github.com/bertjosephp/AI-Powered-Data-Analysis-and-Slide-Generator/actions/workflows/ci.yml)
 [![Deploy](https://github.com/bertjosephp/AI-Powered-Data-Analysis-and-Slide-Generator/actions/workflows/deploy.yml/badge.svg)](https://github.com/bertjosephp/AI-Powered-Data-Analysis-and-Slide-Generator/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **Upload a spreadsheet, ask a question, and get statistically tested findings, a cited answer from Claude, and an editable PowerPoint deck.**
 
@@ -109,3 +110,7 @@ docs/       architecture.md, api-contract.md, deployment.md
 ```
 
 More detail: [architecture](docs/architecture.md) · [API contract](docs/api-contract.md) · [deployment](docs/deployment.md)
+
+## License
+
+[MIT](LICENSE) © 2026 Bert Joseph Prestoza
