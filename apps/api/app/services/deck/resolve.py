@@ -236,13 +236,14 @@ def chart_caption(f: Finding) -> str:
 
 def finding_caption(f: Finding) -> str:
     """A short caption for a KPI card showing a finding's headline."""
+    # The card's label names the topic, so the caption only says what is compared.
     facts = f.facts
     if f.kind == "segment":
         if f.agg == "rate":
-            return f"{f.target} rate, {f.dimension} = {facts.get('top')} vs {facts.get('bottom')}"
-        return f"{f.target} for {f.dimension} = {facts.get('top')} vs overall"
+            return f"{f.dimension}: {facts.get('top')} vs {facts.get('bottom')}"
+        return f"{f.dimension}: {facts.get('top')} vs overall"
     if f.kind == "bins":
-        return f"{f.target}, {f.dimension} {facts.get('last_band')} vs {facts.get('first_band')}"
+        return f"{f.dimension} {facts.get('last_band')} vs {facts.get('first_band')}"
     if f.kind == "trend":
         return f"{f.target}: seasonal peak" if facts.get("peak_months") else f"{f.target} change"
     if f.kind == "concentration":

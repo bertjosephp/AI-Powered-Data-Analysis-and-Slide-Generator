@@ -6,6 +6,7 @@ prompt states the budgets and this pass guarantees them.
 """
 
 import logging
+import math
 
 from app.schemas.deck import (
     ExecutiveSummarySlide,
@@ -115,3 +116,56 @@ def fit_slide(slide: ResolvedSlide) -> ResolvedSlide:
             steps = [clip(s, STEP) for s in cap(slide.steps, MAX_STEPS, "steps")]
             return slide.model_copy(update={"title": clip(slide.title, TITLE), "steps": steps})
     return slide
+
+
+# ---------- font size to fit a box ----------
+#
+# Character budgets keep text short, but whether it fits depends on how the words
+# wrap: "Clinical risk concentrates predictably" is only 38 characters yet needs
+# three lines in a narrow card. The renderer therefore estimates the wrapped height
+# and steps the font size down until the text fits. Glyph widths are averages for
+# the deck's sans-serif fonts, erring wide so the estimate is conservative.
+
+EMU_PER_PT = 12_700
+GLYPH_WIDTH = 0.55  # average advance, in ems, for regular weight
+BOLD_GLYPH_WIDTH = 0.6
+LINE_HEIGHT = 1.2  # of the font size, before paragraph line spacing
+MIN_SCALE = 0.7  # never shrink below 70% of the design size
+
+
+def wrapped_lines(text: str, width_pt: float, size: float, *, bold: bool) -> int:
+    """How many lines `text` wraps to in a box `width_pt` wide, breaking at spaces."""
+    per_line = max(int(width_pt / (size * (BOLD_GLYPH_WIDTH if bold else GLYPH_WIDTH))), 1)
+    lines = 0
+    for paragraph in text.split("\n"):
+        lines += 1
+        used = 0
+        for word in paragraph.split():
+            needed = len(word) if used == 0 else used + 1 + len(word)
+            if needed <= per_line:
+                used = needed
+            else:
+                # The word starts a new line; one longer than a whole line wraps mid-word.
+                extra = max(math.ceil(len(word) / per_line) - 1, 0)
+                lines += 1 + extra if used else extra
+                used = len(word) - extra * per_line
+    return lines
+
+
+def size_to_fit(
+    text: str,
+    width_emu: int,
+    height_emu: int,
+    size: int,
+    *,
+    bold: bool = False,
+    line_spacing: float = 1.1,
+) -> int:
+    """The largest size, from `size` down to MIN_SCALE of it, at which `text` fits."""
+    width_pt, height_pt = width_emu / EMU_PER_PT, height_emu / EMU_PER_PT
+    floor = max(int(size * MIN_SCALE), 8)
+    for candidate in range(size, floor - 1, -1):
+        lines = wrapped_lines(text, width_pt, candidate, bold=bold)
+        if lines * candidate * LINE_HEIGHT * line_spacing <= height_pt:
+            return candidate
+    return floor

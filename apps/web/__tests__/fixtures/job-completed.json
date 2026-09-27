@@ -2062,22 +2062,22 @@
         {
           "label": "returned by channel",
           "value": "17.6% vs 6.3%",
-          "caption": "returned rate, channel = Social vs Paid Search"
+          "caption": "channel: Social vs Paid Search"
         },
         {
           "label": "returned by rating",
           "value": "16.5×",
-          "caption": "returned, rating 5 vs 2"
+          "caption": "rating 5 vs 2"
         },
         {
           "label": "margin by units",
           "value": "+646%",
-          "caption": "margin, units 8+ vs 1"
+          "caption": "units 8+ vs 1"
         },
         {
           "label": "margin by unit_price",
           "value": "+250%",
-          "caption": "margin, unit_price 99.68–471 vs 15.16–41.09"
+          "caption": "unit_price 99.68–471 vs 15.16–41.09"
         }
       ]
     },
@@ -2089,7 +2089,7 @@
       ],
       "chart": {
         "kind": "finding",
-        "caption": "returned by channel: Social stands out",
+        "caption": "returned by channel",
         "categories": [
           "Social",
           "Affiliate",
@@ -2122,7 +2122,7 @@
       ],
       "chart": {
         "kind": "finding",
-        "caption": "returned falls across rating",
+        "caption": "returned by rating",
         "categories": [
           "2",
           "3",
@@ -2150,7 +2150,7 @@
       ],
       "chart": {
         "kind": "finding",
-        "caption": "margin rises across units",
+        "caption": "margin by units",
         "categories": [
           "1",
           "2",

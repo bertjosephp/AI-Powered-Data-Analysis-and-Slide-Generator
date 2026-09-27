@@ -24,7 +24,7 @@ describe("SlideView", () => {
 
   it("renders KPI values exactly as resolved by the backend", () => {
     render(<SlideView slide={slideOf("kpi_cards")} index={3} total={8} datasetName="sample.csv" />);
-    for (const text of ["17.6% vs 6.3%", "16.5×", "+646%", "returned rate, channel = Social vs Paid Search", "3 / 8"]) {
+    for (const text of ["17.6% vs 6.3%", "16.5×", "+646%", "channel: Social vs Paid Search", "3 / 8"]) {
       expect(screen.getByText(text)).toBeInTheDocument();
     }
   });

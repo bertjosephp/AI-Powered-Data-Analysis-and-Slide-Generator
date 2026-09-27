@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 from pptx import Presentation
-from pptx.util import Emu, Pt
+from pptx.util import Emu, Inches, Pt
 
 from app.schemas.deck import (
     ChartInsightSlide,
@@ -40,6 +40,7 @@ from app.services.ingestion.loader import load_dataset
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 AVG_GLYPH_EM = 0.55
+BOLD_GLYPH_EM = 0.6  # bold runs are wider; measured against real renders
 LINE_HEIGHT = 1.2
 
 
@@ -129,7 +130,8 @@ def _worst_case_deck(profile: DatasetProfile) -> Presentation:
     """Every text field at its full budget, with long words, at max item counts."""
 
     def text(n: int) -> str:
-        words = "Mmmmmm wwwwww revenue discount returns product "
+        # Long words matter: they push whole words onto the next line.
+        words = "Mmmmmm concentrates wwwwww readmission discount predictably returns "
         return (words * 40)[:n]
 
     metric = MetricRef(metric="max", column="revenue", finding_id=None)
@@ -172,8 +174,11 @@ def _worst_case_deck(profile: DatasetProfile) -> Presentation:
     return _render(specs, profile)
 
 
-def _estimated_height(text: str, font_pt: float, box_width: Emu, spacing: float) -> float:
-    chars_per_line = max(1, int(box_width / Pt(font_pt * AVG_GLYPH_EM)))
+def _estimated_height(
+    text: str, font_pt: float, box_width: Emu, spacing: float, bold: bool = False
+) -> float:
+    em = BOLD_GLYPH_EM if bold else AVG_GLYPH_EM
+    chars_per_line = max(1, int(box_width / Pt(font_pt * em)))
     lines = 0
     for paragraph in text.split("\n"):
         # word wrap: count lines by greedy fill
@@ -206,9 +211,13 @@ def test_worst_case_text_fits_its_box(profile) -> None:  # type: ignore[no-untyp
             if not shape.has_text_frame or not shape.text_frame.text:
                 continue
             paragraph = shape.text_frame.paragraphs[0]
-            size = paragraph.runs[0].font.size.pt
+            run = paragraph.runs[0].font
             needed = _estimated_height(
-                shape.text_frame.text, size, shape.width, paragraph.line_spacing or 1.0
+                shape.text_frame.text,
+                run.size.pt,
+                shape.width,
+                paragraph.line_spacing or 1.0,
+                bool(run.bold),
             )
             if needed > shape.height * 1.02:
                 overflows.append(
@@ -222,3 +231,35 @@ def test_estimator_sanity() -> None:
     one_line = _estimated_height("short", 12, Emu(914400 * 5), 1.0)
     assert math.isclose(one_line, Pt(12) * LINE_HEIGHT)
     assert _estimated_height("word " * 200, 12, Emu(914400 * 2), 1.0) > one_line * 10
+
+
+def test_text_shrinks_to_fit_narrow_boxes(profile) -> None:  # type: ignore[no-untyped-def]
+    # From a real deck: a short title with a long word wrapped to three lines in a
+    # two-line card, and its bottom line was cut off.
+    spec = ExecutiveSummarySlide(
+        layout="executive_summary",
+        headline="Readmission risk concentrates in heart failure.",
+        takeaways=[
+            Takeaway(title="Follow-up scheduling matters most", text="Short."),
+            Takeaway(title="Clinical risk concentrates predictably", text="Short."),
+            Takeaway(title="Risks compound together", text="Short."),
+        ],
+    )
+    slide = _render([spec], profile).slides[0]
+    sizes = {
+        s.text_frame.text: s.text_frame.paragraphs[0].runs[0].font.size.pt
+        for s in slide.shapes
+        if s.has_text_frame and s.text_frame.text
+    }
+    assert sizes["Clinical risk concentrates predictably"] < 19
+    assert sizes["Follow-up scheduling matters most"] == 19  # fits: keeps the design size
+
+
+def test_wrapped_line_estimate() -> None:
+    t = DEFAULT_THEME
+    card = (t.content_width - 2 * t.gutter) / 3
+    width = (card - Inches(0.6)) / 12700  # a takeaway card's text width, in pt
+    assert fit.wrapped_lines("Follow-up scheduling matters most", width, 19, bold=True) == 2
+    assert fit.wrapped_lines("Clinical risk concentrates predictably", width, 19, bold=True) == 3
+    assert fit.wrapped_lines("one\ntwo", width, 12, bold=False) == 2
+    assert fit.wrapped_lines("x" * 200, 100, 10, bold=False) > 5  # long words wrap mid-word

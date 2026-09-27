@@ -30,6 +30,7 @@ from app.schemas.deck import (
     ResolvedSlide,
     ResolvedTitleSlide,
 )
+from app.services.deck.fit import size_to_fit
 from app.services.deck.resolve import format_number, format_percent
 from app.services.deck.theme import DEFAULT_THEME, Theme, rgb
 
@@ -704,6 +705,8 @@ class PptxRenderer:
         paragraph.line_spacing = line_spacing
         run = paragraph.add_run()
         run.text = text
+        # Shrink (within limits) when the wrapped text would be taller than its box.
+        size = size_to_fit(text, w, h, size, bold=bold, line_spacing=line_spacing)
         font = run.font
         font.name, font.size, font.bold, font.color.rgb = self.t.font, Pt(size), bold, rgb(color)
 
