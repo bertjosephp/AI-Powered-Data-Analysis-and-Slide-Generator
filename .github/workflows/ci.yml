@@ -148,4 +148,4 @@ jobs:
           curl -fsS -o /dev/null -w "web: HTTP %{http_code}\n" http://127.0.0.1:3000
       - name: Container logs
         if: failure()
-        run: docker logs api; docker logs web
+        run: docker logs api || true; docker logs web || true # a failed build starts no containers

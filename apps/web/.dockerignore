@@ -1,6 +1,13 @@
 node_modules
 .next
 coverage
-__tests__
 *.log
 .env*
+# Tests and their tooling: not part of the app, and `next build` type-checks every .ts file
+__tests__
+e2e
+test-results
+playwright-report
+vitest.config.mts
+vitest.setup.ts
+playwright.config.ts
